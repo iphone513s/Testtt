@@ -6,656 +6,416 @@
     <title>校園小幫手 | Campus Link Pro</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <script src="https://unpkg.com/lucide@latest"></script>
-
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    colors: {
-                        brand: {
-                            50: '#eef2ff',
-                            100: '#e0e7ff',
-                            500: '#6366f1',
-                            600: '#4F46E5',
-                            700: '#4338ca',
-                        }
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    boxShadow: {
-                        'up': '0 -4px 20px -5px rgba(0, 0, 0, 0.1)',
-                    }
+                    colors: { brand: { 50: '#f5f3ff', 600: '#4F46E5', 700: '#4338ca' } },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
                 }
             }
         }
     </script>
 
     <style>
-        /* 隱藏滾動條 */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .active-press:active { transform: scale(0.97); transition: 0.1s; }
         
-        .active-press:active { transform: scale(0.98); transition: transform 0.1s; }
-        
-        /* iOS Safe Area 適配 */
-        .pb-safe { padding-bottom: calc(90px + env(safe-area-inset-bottom)); } /* 增加底部空間防止遮擋 */
+        /* 修復 iOS 安全區域與滑動 */
+        .page-section { height: 100vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .pb-safe { padding-bottom: calc(100px + env(safe-area-inset-bottom)); }
         .pt-safe { padding-top: env(safe-area-inset-top); }
         
-        /* 地圖模擬 */
-        .map-bg-1 { background: #e5e7eb url('https://placehold.co/600x400/e5e7eb/a3a3a3?text=Campus+Map+A') center/cover; }
-        .map-bg-2 { background: #e5e7eb url('https://placehold.co/600x400/d1d5db/6b7280?text=Campus+Map+B') center/cover; }
-        .map-bg-3 { background: #e5e7eb url('https://placehold.co/600x400/f3f4f6/9ca3af?text=Gym+Zone') center/cover; }
+        /* 頁面切換動畫 */
+        .fade-in { animation: fadeIn 0.2s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-900 font-sans h-screen w-screen overflow-hidden flex flex-col select-none">
+<body class="bg-gray-50 text-gray-900 font-sans h-screen w-screen overflow-hidden">
 
-    <main id="app-container" class="flex-1 overflow-y-auto no-scrollbar relative w-full scroll-smooth">
+    <main id="app-container" class="relative h-full w-full">
         
-        <section id="page-home" class="page-section min-h-full pb-safe">
-            <div class="sticky top-0 bg-white/95 backdrop-blur-md z-30 px-4 pt-safe shadow-sm pb-3">
-                <div class="flex justify-between items-center py-2">
-                    <div class="flex items-center gap-2 bg-gray-100 px-3 py-1.5 rounded-full active:bg-gray-200 transition">
+        <section id="page-home" class="page-section fade-in">
+            <div class="sticky top-0 bg-white/90 backdrop-blur-md z-30 px-4 pt-safe border-b border-gray-100 pb-3">
+                <div class="flex justify-between items-center py-3">
+                    <div class="flex items-center gap-2 bg-gray-100 px-3 py-1.5 rounded-full">
                         <i data-lucide="map-pin" class="w-4 h-4 text-brand-600"></i>
-                        <select onchange="refreshTasks(this.value)" class="bg-transparent text-sm font-bold text-gray-700 outline-none pr-1">
-                            <option value="TKU">淡江大學 (目前)</option>
-                            <option value="NTU">台灣大學</option>
-                            <option value="NCCU">政治大學</option>
-                            <option value="Other">其他校區...</option>
+                        <select onchange="alert('已切換至'+this.value)" class="bg-transparent text-sm font-bold outline-none pr-1">
+                            <option>淡江大學</option>
+                            <option>台灣大學</option>
+                            <option>政治大學</option>
                         </select>
                     </div>
-                    <div class="relative p-2 active:bg-gray-100 rounded-full">
-                        <i data-lucide="bell" class="w-6 h-6 text-gray-600"></i>
-                        <span class="absolute top-1 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
-                    </div>
+                    <div class="relative p-2"><i data-lucide="bell" class="w-6 h-6 text-gray-600"></i></div>
                 </div>
-
-                <div class="flex gap-3 overflow-x-auto no-scrollbar mt-1 pb-1" id="task-tabs">
-                    <button onclick="filterTasks('all', this)" class="tab-btn active px-4 py-1.5 bg-brand-600 text-white text-sm font-medium rounded-full shadow-md whitespace-nowrap transition-all">全部</button>
-                    <button onclick="filterTasks('food', this)" class="tab-btn px-4 py-1.5 bg-white text-gray-600 text-sm font-medium rounded-full border border-gray-200 whitespace-nowrap transition-all">🍔 跑腿買飯</button>
-                    <button onclick="filterTasks('study', this)" class="tab-btn px-4 py-1.5 bg-white text-gray-600 text-sm font-medium rounded-full border border-gray-200 whitespace-nowrap transition-all">📚 共筆/佔位</button>
-                    <button onclick="filterTasks('multi', this)" class="tab-btn px-4 py-1.5 bg-white text-brand-600 text-sm font-medium rounded-full border border-brand-200 whitespace-nowrap transition-all">👥 多人組隊</button>
+                <div class="flex gap-2 overflow-x-auto no-scrollbar py-1">
+                    <button onclick="filterTasks('all', this)" class="tab-btn active px-4 py-2 bg-brand-600 text-white rounded-full text-xs font-bold whitespace-nowrap shadow-md">全部</button>
+                    <button onclick="filterTasks('food', this)" class="tab-btn px-4 py-2 bg-white border border-gray-200 rounded-full text-xs font-bold whitespace-nowrap">🍔 跑腿</button>
+                    <button onclick="filterTasks('multi', this)" class="tab-btn px-4 py-2 bg-white border border-gray-200 rounded-full text-xs font-bold whitespace-nowrap">👥 多人</button>
                 </div>
             </div>
 
-            <div class="p-4 space-y-4" id="task-list">
+            <div class="p-4 space-y-4 pb-32" id="task-list-home">
                 </div>
         </section>
 
-        <section id="page-post" class="page-section hidden h-full bg-white flex flex-col z-40 fixed inset-0">
-            <header class="p-4 border-b border-gray-100 bg-white pt-safe flex items-center justify-between">
+        <section id="page-post" class="page-section hidden bg-white fade-in">
+            <header class="p-4 border-b border-gray-100 pt-safe flex items-center justify-between sticky top-0 bg-white z-10">
                 <h2 class="text-xl font-bold">發布新委託</h2>
-                <button onclick="switchTab('home')" class="p-2 text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-6 h-6"></i></button>
+                <button onclick="switchTab('home')" class="p-2"><i data-lucide="x" class="w-6 h-6 text-gray-400"></i></button>
             </header>
             
-            <div class="flex-1 overflow-y-auto p-5 pb-40"> 
-                <div class="space-y-6">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">任務模式</label>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div onclick="selectPostMode('single')" id="btn-mode-single" class="cursor-pointer p-4 border-2 border-brand-600 bg-brand-50 rounded-xl flex flex-col items-center justify-center text-brand-700 transition-all active:scale-95">
-                            <i data-lucide="user" class="w-6 h-6 mb-1"></i>
-                            <span class="font-bold">單人任務</span>
-                        </div>
-                        <div onclick="selectPostMode('multi')" id="btn-mode-multi" class="cursor-pointer p-4 border border-gray-200 bg-white rounded-xl flex flex-col items-center justify-center text-gray-400 transition-all active:scale-95">
-                            <i data-lucide="users" class="w-6 h-6 mb-1"></i>
-                            <span class="font-medium">多人協作</span>
-                        </div>
+            <div class="p-5 space-y-8 pb-48"> <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-3">任務模式</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="setMode('single')" id="mode-single" class="p-4 rounded-2xl border-2 border-brand-600 bg-brand-50 text-brand-700 flex flex-col items-center gap-1 active-press">
+                            <i data-lucide="user" class="w-6 h-6"></i><span class="font-bold">單人</span>
+                        </button>
+                        <button onclick="setMode('multi')" id="mode-multi" class="p-4 rounded-2xl border-2 border-gray-100 bg-gray-50 text-gray-400 flex flex-col items-center gap-1 active-press">
+                            <i data-lucide="users" class="w-6 h-6"></i><span class="font-bold">多人</span>
+                        </button>
                     </div>
+                </div>
 
-                    <div id="multi-options" class="hidden bg-gray-50 p-4 rounded-xl border border-gray-200">
-                        <label class="block text-sm text-gray-600 mb-2">需要人數</label>
-                        <div class="flex items-center gap-4">
-                            <button onclick="adjustPeople(-1)" class="w-8 h-8 rounded-full bg-white border flex items-center justify-center">-</button>
-                            <span class="font-bold text-lg" id="people-count">2</span>
-                            <button onclick="adjustPeople(1)" class="w-8 h-8 rounded-full bg-white border flex items-center justify-center">+</button>
-                            <span class="text-sm text-gray-400">人</span>
-                        </div>
-                    </div>
+                <div id="multi-input" class="hidden animate-fade-in bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                    <label class="text-sm font-bold text-indigo-900 block mb-2">需要人數 (2-10人)</label>
+                    <input type="number" id="post-count" value="2" class="w-full p-3 rounded-lg border-none outline-none font-bold text-indigo-600">
+                </div>
 
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">任務標題</label>
+                    <input type="text" id="post-title" placeholder="例如：幫忙搬重物、代排隊..." class="w-full p-4 bg-gray-50 rounded-xl outline-none focus:bg-white border focus:border-brand-600 transition-all">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">地點</label>
+                    <input type="text" id="post-loc" value="淡江大學 圖書館" class="w-full p-4 bg-gray-50 rounded-xl outline-none border focus:border-brand-600">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">願付金額 (每人)</label>
+                    <input type="number" id="post-price" value="100" oninput="updateTotal()" class="w-full p-4 bg-gray-50 rounded-xl outline-none font-bold text-xl text-brand-600 border focus:border-brand-600">
+                </div>
+
+                <div class="flex items-center justify-between p-4 bg-red-50 rounded-xl border border-red-100">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">任務標題</label>
-                        <input type="text" id="post-title" placeholder="例如：幫忙搬系辦沙發" class="w-full p-4 bg-gray-50 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 transition border border-transparent focus:bg-white">
+                        <h4 class="font-bold text-red-700">🔥 急件置頂</h4>
+                        <p class="text-xs text-red-400">增加 3 倍曝光率 (+$30)</p>
                     </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">地點 (自動定位)</label>
-                        <div class="relative">
-                            <i data-lucide="map-pin" class="absolute left-4 top-4 w-5 h-5 text-brand-500"></i>
-                            <input type="text" id="post-loc" value="淡江大學 工學館" class="w-full p-4 pl-12 bg-gray-50 rounded-xl outline-none">
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">願付金額 (每人)</label>
-                        <div class="relative">
-                            <span class="absolute left-4 top-4 text-gray-500">$</span>
-                            <input type="number" value="150" id="base-price" class="w-full p-4 pl-8 bg-gray-50 rounded-xl outline-none font-bold text-lg">
-                        </div>
-                    </div>
-
-                    <div class="bg-red-50 border border-red-100 p-4 rounded-xl flex items-center justify-between">
-                        <div>
-                            <div class="flex items-center gap-2">
-                                <h3 class="font-bold text-red-700">🔥 急件置頂</h3>
-                                <span class="text-xs bg-red-200 text-red-800 px-1 rounded">HOT</span>
-                            </div>
-                            <p class="text-xs text-red-400 mt-1">增加 300% 曝光率</p>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="urgent-toggle" class="sr-only peer" onchange="updateTotal()">
-                            <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
-                        </label>
-                    </div>
+                    <input type="checkbox" id="urgent-toggle" onchange="updateTotal()" class="w-6 h-6 accent-red-500">
                 </div>
             </div>
 
-            <div class="absolute bottom-0 left-0 w-full bg-white border-t border-gray-100 p-4 pb-8 shadow-up z-50">
-                <div class="flex justify-between items-end mb-3 px-1">
-                    <span class="text-gray-500 text-sm">預估總額</span>
-                    <span class="text-2xl font-bold text-gray-900" id="total-price">$150</span>
+            <div class="fixed bottom-0 left-0 w-full bg-white border-t p-5 pb-8 shadow-2xl z-20">
+                <div class="flex justify-between items-center mb-4 px-1">
+                    <span class="text-gray-500 font-medium">預估總額</span>
+                    <span id="final-price" class="text-3xl font-bold text-gray-900">$100</span>
                 </div>
-                <button onclick="submitTask()" class="w-full bg-brand-600 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-transform hover:bg-brand-700">
-                    立即發布
-                </button>
+                <button onclick="publishTask()" class="w-full bg-brand-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-brand-100 active:scale-95 transition">立即發布</button>
             </div>
         </section>
 
-        <section id="page-tasks" class="page-section hidden min-h-full p-4 pb-safe pt-safe">
-            <h2 class="text-2xl font-bold text-gray-900 mb-6 mt-4">訂單管理</h2>
-            <div class="flex border-b border-gray-200 mb-4">
-                <div class="pb-2 border-b-2 border-brand-600 text-brand-600 font-medium px-4 cursor-pointer">我發布的</div>
-                <div class="pb-2 text-gray-400 font-medium px-4 cursor-pointer">歷史紀錄</div>
+        <section id="page-tasks" class="page-section hidden pt-safe px-4">
+            <h2 class="text-2xl font-bold my-5">任務管理</h2>
+            <div class="flex gap-4 border-b mb-6 text-sm font-bold">
+                <button class="pb-3 border-b-2 border-brand-600 text-brand-600">進行中</button>
+                <button class="pb-3 text-gray-400">已完成</button>
             </div>
-            
-            <div id="my-posted-list" class="space-y-3">
-                <div class="text-center mt-20 opacity-50" id="empty-state">
-                    <i data-lucide="clipboard-list" class="w-16 h-16 mx-auto mb-2 text-gray-300"></i>
-                    <p>目前沒有進行中的任務</p>
+            <div id="my-task-list" class="space-y-4">
                 </div>
-            </div>
         </section>
 
-        <section id="page-profile" class="page-section hidden min-h-full bg-gray-50 pb-safe">
-            <div class="bg-white pb-6 pt-safe px-5 rounded-b-3xl shadow-sm mb-4">
-                <div class="flex items-center gap-4 mt-4">
-                    <div class="w-20 h-20 bg-gradient-to-tr from-brand-400 to-blue-300 rounded-full border-4 border-white shadow-md flex items-center justify-center text-white text-2xl font-bold">
-                        明
+        <section id="page-profile" class="page-section hidden pt-safe bg-gray-50">
+            <div class="bg-white p-6 rounded-b-[40px] shadow-sm mb-6 text-center">
+                <div class="w-24 h-24 bg-brand-600 text-white rounded-full mx-auto flex items-center justify-center text-3xl font-bold mb-3 shadow-xl">明</div>
+                <h2 class="text-2xl font-bold">小明</h2>
+                <p class="text-gray-400 text-sm">TKU 資管 3A | 信用 100</p>
+                
+                <div class="grid grid-cols-2 gap-4 mt-6">
+                    <div class="bg-gray-50 p-4 rounded-2xl">
+                        <span class="text-xs text-gray-400 block mb-1">錢包餘額</span>
+                        <span class="text-xl font-bold text-gray-900">$520</span>
                     </div>
-                    <div>
-                        <h2 class="text-xl font-bold text-gray-900">小明</h2>
-                        <div class="flex items-center gap-2 mt-1">
-                            <span class="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded">資管系 3A</span>
-                            <span class="text-yellow-500 text-sm font-bold flex items-center"><i data-lucide="star" class="w-3 h-3 fill-current mr-1"></i>4.9</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-3 mt-6">
-                    <div class="bg-gray-50 p-3 rounded-xl border border-gray-100 text-center">
-                        <span class="text-gray-400 text-xs">錢包餘額</span>
-                        <span class="text-xl font-bold text-gray-900 block mt-1">$520</span>
-                    </div>
-                    <div class="bg-gray-50 p-3 rounded-xl border border-gray-100 text-center">
-                        <span class="text-gray-400 text-xs">信用分數</span>
-                        <span class="text-xl font-bold text-green-600 block mt-1">100</span>
+                    <div onclick="openReviews()" class="bg-gray-50 p-4 rounded-2xl cursor-pointer">
+                        <span class="text-xs text-gray-400 block mb-1">互助評價</span>
+                        <span class="text-xl font-bold text-gray-900 flex items-center justify-center">4.9 <i data-lucide="star" class="w-4 h-4 fill-yellow-400 text-yellow-400 ml-1"></i></span>
                     </div>
                 </div>
             </div>
             
-            <div class="px-4 space-y-2">
-                <div class="bg-white p-4 rounded-xl flex justify-between items-center shadow-sm active-press">
-                    <span class="font-medium text-gray-700">歷史評價</span>
-                    <i data-lucide="chevron-right" class="w-5 h-5 text-gray-300"></i>
+            <div class="px-5 space-y-4">
+                <div class="bg-white p-5 rounded-2xl flex justify-between items-center shadow-sm">
+                    <span class="font-bold text-gray-700">錢包提領</span><i data-lucide="chevron-right" class="text-gray-300"></i>
                 </div>
-                <div class="bg-white p-4 rounded-xl flex justify-between items-center shadow-sm active-press">
-                    <span class="font-medium text-gray-700">付款設定</span>
-                    <i data-lucide="chevron-right" class="w-5 h-5 text-gray-300"></i>
+                <div class="bg-white p-5 rounded-2xl flex justify-between items-center shadow-sm">
+                    <span class="font-bold text-gray-700">隱私設定</span><i data-lucide="chevron-right" class="text-gray-300"></i>
                 </div>
             </div>
         </section>
 
     </main>
 
-    <nav class="bg-white border-t border-gray-100 flex justify-around items-center h-[85px] z-50 fixed bottom-0 w-full pb-6 shadow-[0_-5px_15px_rgba(0,0,0,0.02)]">
-        <button onclick="switchTab('home')" class="nav-btn text-brand-600 flex flex-col items-center gap-1 w-16 pt-2" id="nav-home">
-            <i data-lucide="home" class="w-6 h-6"></i>
-            <span class="text-[10px] font-medium">大廳</span>
+    <nav class="fixed bottom-0 left-0 w-full bg-white border-t flex justify-around items-center h-[90px] pb-6 z-50 shadow-up">
+        <button onclick="switchTab('home')" id="nav-home" class="nav-btn text-brand-600 flex flex-col items-center gap-1">
+            <i data-lucide="home" class="w-6 h-6"></i><span class="text-[10px] font-bold">大廳</span>
         </button>
-        <button onclick="switchTab('post')" class="nav-btn text-gray-400 flex flex-col items-center gap-1 w-16 pt-2" id="nav-post">
-            <div class="bg-brand-600 text-white p-3 rounded-full -mt-10 shadow-lg border-4 border-gray-50 active:scale-95 transition">
-                <i data-lucide="plus" class="w-6 h-6"></i>
-            </div>
-            <span class="text-[10px] font-medium">發布</span>
+        <button onclick="switchTab('post')" class="nav-btn text-gray-300 flex flex-col items-center">
+            <div class="bg-brand-600 text-white p-3 rounded-full -mt-10 border-4 border-gray-50 shadow-xl"><i data-lucide="plus" class="w-6 h-6"></i></div>
+            <span class="text-[10px] font-bold mt-1">發布</span>
         </button>
-        <button onclick="switchTab('tasks')" class="nav-btn text-gray-400 flex flex-col items-center gap-1 w-16 pt-2" id="nav-tasks">
-            <i data-lucide="clipboard-list" class="w-6 h-6"></i>
-            <span class="text-[10px] font-medium">訂單</span>
+        <button onclick="switchTab('tasks')" id="nav-tasks" class="nav-btn text-gray-300 flex flex-col items-center gap-1">
+            <i data-lucide="clipboard-list" class="w-6 h-6"></i><span class="text-[10px] font-bold">訂單</span>
         </button>
-        <button onclick="switchTab('profile')" class="nav-btn text-gray-400 flex flex-col items-center gap-1 w-16 pt-2" id="nav-profile">
-            <i data-lucide="user" class="w-6 h-6"></i>
-            <span class="text-[10px] font-medium">我的</span>
+        <button onclick="switchTab('profile')" id="nav-profile" class="nav-btn text-gray-300 flex flex-col items-center gap-1">
+            <i data-lucide="user" class="w-6 h-6"></i><span class="text-[10px] font-bold">我的</span>
         </button>
     </nav>
 
-    <div id="modal-task" class="fixed inset-0 bg-black/40 z-[60] hidden flex flex-col justify-end opacity-0 transition-opacity duration-300">
-        <div class="bg-white w-full h-[85vh] rounded-t-3xl flex flex-col transform translate-y-full transition-transform duration-300 shadow-2xl relative" id="modal-task-content">
-            <button onclick="closeModal('modal-task')" class="absolute top-4 right-4 p-2 bg-gray-100 rounded-full z-10"><i data-lucide="x" class="w-5 h-5 text-gray-500"></i></button>
+    <div id="modal-task" class="fixed inset-0 bg-black/50 z-[60] hidden flex flex-col justify-end opacity-0 transition-opacity">
+        <div class="bg-white w-full h-[85vh] rounded-t-[40px] p-6 pb-24 overflow-y-auto transform translate-y-full transition-transform" id="modal-task-content">
+            <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6"></div>
+            <div class="flex justify-between items-start mb-4">
+                <h3 id="det-title" class="text-2xl font-bold w-2/3 leading-tight">任務</h3>
+                <span id="det-price" class="text-3xl font-bold text-brand-600">$100</span>
+            </div>
             
-            <div class="flex-1 overflow-y-auto p-6 pb-24">
-                <span class="px-2 py-1 rounded text-xs font-bold bg-gray-100 text-gray-600" id="detail-tag">標籤</span>
-                <h3 class="text-2xl font-bold mt-3 mb-1 text-gray-900 leading-tight" id="detail-title">標題</h3>
-                <div class="text-3xl font-bold text-brand-600 mb-6" id="detail-price">$150</div>
-
-                <div onclick="openOtherProfile()" class="flex items-center justify-between bg-white border border-gray-100 shadow-sm p-4 rounded-xl mb-6 active:bg-gray-50 cursor-pointer">
-                    <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-lg font-bold text-gray-600" id="detail-avatar">A</div>
-                        <div>
-                            <p class="font-bold text-gray-900 flex items-center gap-1">
-                                <span id="detail-user">User</span>
-                                <i data-lucide="chevron-right" class="w-3 h-3 text-gray-400"></i>
-                            </p>
-                            <div class="flex items-center gap-2 text-xs">
-                                <span class="text-gray-500" id="detail-role">系所</span>
-                                <span class="flex items-center text-yellow-500 font-bold"><i data-lucide="star" class="w-3 h-3 fill-current mr-0.5"></i> 4.8</span>
-                            </div>
-                        </div>
-                    </div>
-                    <button onclick="event.stopPropagation(); openChat()" class="bg-brand-50 text-brand-700 px-4 py-2 rounded-lg text-sm font-bold">
-                        私訊
-                    </button>
-                </div>
-
-                <div class="w-full h-40 rounded-xl mb-4 relative overflow-hidden bg-gray-100 shadow-inner" id="detail-map">
-                    <div class="absolute inset-0 bg-black/10 flex items-center justify-center">
-                        <span class="bg-white/90 px-3 py-1.5 rounded-full text-xs font-bold shadow flex items-center gap-1">
-                            <i data-lucide="navigation" class="w-3 h-3 text-blue-500"></i>
-                            距離 <span id="detail-dist">350m</span>
-                        </span>
+            <div onclick="openOtherProfile()" class="flex items-center justify-between bg-gray-50 p-4 rounded-2xl mb-6 active-press cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <div id="det-avatar" class="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center font-bold text-white">?</div>
+                    <div>
+                        <p id="det-user" class="font-bold text-gray-900">User</p>
+                        <p class="text-xs text-yellow-500 font-bold flex items-center"><i data-lucide="star" class="w-3 h-3 fill-current mr-1"></i> 4.8 (12則評論)</p>
                     </div>
                 </div>
-
-                <div class="space-y-2 mb-6">
-                    <h4 class="font-bold text-gray-900 text-sm">任務詳情</h4>
-                    <p class="text-gray-600 leading-relaxed text-sm" id="detail-desc">描述...</p>
-                </div>
+                <button onclick="event.stopPropagation(); openChat()" class="bg-white border border-gray-200 px-4 py-2 rounded-xl text-xs font-bold shadow-sm">聯絡案主</button>
             </div>
 
-            <div class="p-4 border-t border-gray-100 bg-white pb-safe">
-                <button id="btn-action" class="w-full bg-brand-600 text-white font-bold py-4 rounded-xl text-lg shadow-lg active:scale-95 transition">
-                    接下任務
-                </button>
+            <div class="space-y-4 mb-10 text-sm text-gray-600">
+                <p class="flex items-center gap-2"><i data-lucide="map-pin" class="w-4 h-4 text-brand-600"></i> <span id="det-loc">淡江大學</span></p>
+                <p id="det-desc" class="leading-relaxed bg-gray-50 p-4 rounded-xl">描述...</p>
             </div>
+
+            <button onclick="acceptTask()" id="btn-action" class="w-full bg-gray-900 text-white font-bold py-4 rounded-2xl shadow-xl active:scale-95 transition">接下任務</button>
         </div>
     </div>
 
-    <div id="modal-other-profile" class="fixed inset-0 bg-white z-[70] hidden flex flex-col animate-fade-in">
-        <header class="p-4 pt-safe flex items-center gap-4 border-b border-gray-100">
-            <button onclick="closeModal('modal-other-profile')" class="p-2 -ml-2"><i data-lucide="arrow-left" class="w-6 h-6"></i></button>
-            <h2 class="font-bold text-lg">發布者資訊</h2>
+    <div id="modal-other-profile" class="fixed inset-0 bg-white z-[70] hidden flex flex-col fade-in">
+        <header class="p-4 pt-safe flex items-center gap-4 border-b">
+            <button onclick="closeModal('modal-other-profile')" class="p-2"><i data-lucide="arrow-left" class="w-6 h-6"></i></button>
+            <h2 class="font-bold text-lg">發布者評價</h2>
         </header>
-        <div class="p-6 overflow-y-auto">
-            <div class="text-center mb-6">
-                <div class="w-20 h-20 bg-gray-200 rounded-full mx-auto mb-3 flex items-center justify-center text-2xl font-bold" id="profile-avatar-lg">A</div>
-                <h3 class="text-xl font-bold" id="profile-name-lg">Alice</h3>
-                <p class="text-gray-500 text-sm" id="profile-role-lg">英文系</p>
-            </div>
-            
-            <div class="bg-gray-50 p-4 rounded-xl mb-6 text-center">
-                <div class="text-3xl font-bold text-gray-900">4.8</div>
-                <div class="flex justify-center text-yellow-400 my-1">
-                    <i data-lucide="star" class="w-4 h-4 fill-current"></i>
-                    <i data-lucide="star" class="w-4 h-4 fill-current"></i>
-                    <i data-lucide="star" class="w-4 h-4 fill-current"></i>
-                    <i data-lucide="star" class="w-4 h-4 fill-current"></i>
-                    <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+        <div class="p-6 overflow-y-auto space-y-6">
+            <div class="text-center">
+                <div id="p-avatar" class="w-20 h-20 bg-gray-200 rounded-full mx-auto mb-3 flex items-center justify-center text-2xl font-bold">?</div>
+                <h3 id="p-name" class="text-xl font-bold">Alice</h3>
+                <div class="flex justify-center text-yellow-400 my-2">
+                    <i data-lucide="star" class="w-5 h-5 fill-current"></i><i data-lucide="star" class="w-5 h-5 fill-current"></i><i data-lucide="star" class="w-5 h-5 fill-current"></i><i data-lucide="star" class="w-5 h-5 fill-current"></i><i data-lucide="star" class="w-5 h-5 fill-current"></i>
                 </div>
-                <div class="text-xs text-gray-400">共 24 則評價</div>
             </div>
-
-            <h4 class="font-bold mb-3 text-sm text-gray-700">最近評論</h4>
-            <div class="space-y-3">
-                <div class="bg-white border border-gray-100 p-3 rounded-xl shadow-sm">
-                    <div class="flex justify-between mb-1">
-                        <span class="font-bold text-xs text-gray-900">陳同學</span>
-                        <span class="text-yellow-500 text-xs font-bold">5.0 ★</span>
-                    </div>
-                    <p class="text-sm text-gray-600">人很好，溝通順利！</p>
+            <div class="space-y-4">
+                <div class="bg-gray-50 p-4 rounded-2xl">
+                    <div class="flex justify-between mb-2"><span class="font-bold text-sm">王同學</span><span class="text-gray-400 text-xs">2025.12.10</span></div>
+                    <p class="text-sm text-gray-600 leading-relaxed">非常親切，地點敘述的很清楚，領完東西後很快就收到酬勞了，大推！</p>
                 </div>
-                <div class="bg-white border border-gray-100 p-3 rounded-xl shadow-sm">
-                    <div class="flex justify-between mb-1">
-                        <span class="font-bold text-xs text-gray-900">王同學</span>
-                        <span class="text-yellow-500 text-xs font-bold">4.5 ★</span>
-                    </div>
-                    <p class="text-sm text-gray-600">回覆很快，謝謝。</p>
+                <div class="bg-gray-50 p-4 rounded-2xl">
+                    <div class="flex justify-between mb-2"><span class="font-bold text-sm">李同學</span><span class="text-gray-400 text-xs">2025.11.28</span></div>
+                    <p class="text-sm text-gray-600 leading-relaxed">雖然是多人任務，但主揪協調的很好，搬東西過程很順利。</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="modal-chat" class="fixed inset-0 bg-white z-[80] hidden flex flex-col">
-        <div class="border-b border-gray-100 p-4 pt-safe flex items-center gap-3 bg-white shadow-sm z-10">
-            <button onclick="closeChat()" class="p-1"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
-            <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-xs font-bold" id="chat-avatar">A</div>
-            <div>
-                <h3 class="font-bold text-sm" id="chat-name">英文系 Alice</h3>
-                <p class="text-[10px] text-green-500 flex items-center gap-1">● 線上</p>
-            </div>
-        </div>
-        
-        <div class="flex-1 bg-gray-50 p-4 space-y-4 overflow-y-auto" id="chat-body">
-            <div class="flex justify-center"><span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">今天 14:20</span></div>
-            
+    <div id="modal-chat" class="fixed inset-0 bg-white z-[80] hidden flex flex-col fade-in">
+        <header class="p-4 pt-safe border-b flex items-center gap-3">
+            <button onclick="closeChat()"><i data-lucide="chevron-left" class="w-6 h-6 text-gray-400"></i></button>
+            <div id="chat-avatar" class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-xs font-bold text-white">?</div>
+            <h3 id="chat-user" class="font-bold text-sm">User</h3>
+        </header>
+        <div class="flex-1 bg-gray-50 p-4 space-y-4 overflow-y-auto">
             <div class="flex justify-end">
-                <div class="bg-brand-600 text-white p-3 rounded-2xl rounded-tr-none max-w-[85%] text-sm shadow-sm leading-relaxed">
-                    你好，我想接這個任務。請問包裹很大嗎？機車載得下嗎？
-                </div>
+                <div class="bg-brand-600 text-white p-3 rounded-2xl rounded-tr-none text-sm max-w-[80%] shadow-md">你好，我想接這個委託。請問東西很重嗎？</div>
             </div>
-
             <div class="flex justify-start">
-                <div class="bg-white border border-gray-200 p-3 rounded-2xl rounded-tl-none max-w-[85%] text-sm shadow-sm leading-relaxed text-gray-700">
-                    你好！包裹不大喔，大概像鞋盒那樣，機車踏板可以放！謝謝你～
-                </div>
+                <div class="bg-white border p-3 rounded-2xl rounded-tl-none text-sm max-w-[80%] shadow-sm text-gray-700">你好！不會很重喔，大概像一個大箱子而已，用機車載很方便，謝謝你！</div>
             </div>
         </div>
-
-        <div class="p-3 bg-white border-t border-gray-100 pb-safe">
-            <div class="flex gap-2">
-                <input type="text" placeholder="傳送訊息..." class="flex-1 bg-gray-100 rounded-full px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-brand-500">
-                <button class="bg-brand-600 text-white p-2 rounded-full w-10 h-10 flex items-center justify-center"><i data-lucide="send" class="w-5 h-5"></i></button>
-            </div>
+        <div class="p-3 bg-white border-t pb-safe flex gap-2">
+            <input type="text" placeholder="傳送訊息..." class="flex-1 bg-gray-100 rounded-full px-5 py-3 text-sm outline-none">
+            <button class="bg-brand-600 text-white p-3 rounded-full"><i data-lucide="send" class="w-4 h-4"></i></button>
         </div>
     </div>
 
-    <div id="modal-lobby" class="fixed inset-0 bg-gray-900 z-[70] hidden flex flex-col items-center justify-center text-white">
-        <div class="bg-white/10 p-5 rounded-full mb-6 animate-pulse">
-            <i data-lucide="users" class="w-12 h-12"></i>
-        </div>
+    <div id="modal-lobby" class="fixed inset-0 bg-gray-900 z-[90] hidden flex flex-col items-center justify-center text-white fade-in">
+        <div class="bg-white/10 p-5 rounded-full mb-6 animate-pulse"><i data-lucide="users" class="w-12 h-12 text-white"></i></div>
         <h2 class="text-2xl font-bold mb-2">等待隊友加入...</h2>
-        <p class="text-gray-400 mb-8" id="lobby-title">任務：搬運沙發</p>
-        
-        <div class="grid grid-cols-3 gap-6 w-full max-w-xs mb-10 px-4">
-            <div class="flex flex-col items-center gap-2">
-                <div class="w-16 h-16 rounded-full bg-brand-500 border-2 border-white flex items-center justify-center font-bold text-xl">我</div>
-                <span class="text-xs font-bold text-green-400">準備完成</span>
-            </div>
-            <div class="flex flex-col items-center gap-2">
-                <div class="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center font-bold text-xl">B</div>
-                <span class="text-xs text-gray-400">王同學</span>
-            </div>
-            <div class="flex flex-col items-center gap-2 opacity-50">
-                <div class="w-16 h-16 rounded-full border-2 border-dashed border-gray-500 flex items-center justify-center">?</div>
-                <span class="text-xs text-gray-500">等待中</span>
-            </div>
+        <p class="text-gray-400 mb-10">預計需要 3 人 / 目前 2 人</p>
+        <div class="flex gap-8 mb-12">
+            <div class="flex flex-col items-center gap-2"><div class="w-16 h-16 rounded-full bg-brand-600 flex items-center justify-center font-bold text-xl border-4 border-white">我</div><span class="text-xs font-bold text-green-400">已準備</span></div>
+            <div class="flex flex-col items-center gap-2"><div class="w-16 h-16 rounded-full bg-gray-700 flex items-center justify-center font-bold text-xl text-gray-500">?</div><span class="text-xs text-gray-600">等待中</span></div>
         </div>
-
-        <button onclick="closeModal('modal-lobby')" class="bg-red-500/80 px-8 py-3 rounded-full font-bold backdrop-blur-sm">離開房間</button>
+        <button onclick="closeModal('modal-lobby')" class="px-8 py-3 bg-red-500 text-white font-bold rounded-full">離開房間</button>
     </div>
 
     <script>
         lucide.createIcons();
 
-        // 資料庫
-        let tasksData = [
-            { id: 1, type: 'food', title: '代買摩斯漢堡', price: 50, urgent: false, user: '陳同學', role: '資工系', avatar: '陳', mapClass: 'map-bg-1', desc: '送到商管大樓 3F，只要漢堡不要飲料。', multi: false },
-            { id: 2, type: 'study', title: '急！幫領系辦包裹', price: 80, urgent: true, user: 'Alice', role: '英文系', avatar: 'A', mapClass: 'map-bg-2', desc: '系辦五點關門，請幫我拿去宿舍大廳放。', multi: false },
-            { id: 3, type: 'multi', title: '搬運系辦舊沙發', price: 200, urgent: false, user: '張助教', role: '物理系辦', avatar: '張', mapClass: 'map-bg-3', desc: '需要 3 個人幫忙從 3 樓搬到 1 樓回收場。', multi: true },
+        // 模擬資料庫
+        let tasks = [
+            { id: 1, type: 'food', title: '幫領摩斯漢堡 (海洋吉士)', price: 50, user: 'Alice', role: '英文系', avatar: '#6366f1', desc: '在工學館 3F 教室，不用飲料。', multi: false },
+            { id: 2, type: 'study', title: '急！系辦包裹代領', price: 80, user: '陳助教', role: '物理系', avatar: '#10b981', desc: '限時領取，系辦要關門了。', multi: false, urgent: true },
+            { id: 3, type: 'multi', title: '搬運社辦舊沙發', price: 250, user: '張社長', role: '熱舞社', avatar: '#f59e0b', desc: '多人合力任務，預計需要三人。', multi: true }
         ];
 
-        // 渲染列表
-        function renderTasks(filter = 'all') {
-            const container = document.getElementById('task-list');
-            container.innerHTML = '';
+        // 渲染大廳列表
+        function renderHome(filter = 'all') {
+            const list = document.getElementById('task-list-home');
+            list.innerHTML = '';
             
-            // 排序：急件優先，新的在後
-            const sortedData = [...tasksData].sort((a, b) => (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0));
-
-            const filtered = sortedData.filter(t => filter === 'all' || t.type === filter || (filter === 'multi' && t.multi));
+            const filtered = tasks.filter(t => filter === 'all' || t.type === filter || (filter === 'multi' && t.multi));
             
             filtered.forEach(t => {
-                let badge = '';
-                let borderClass = 'border-gray-100';
-                if (t.urgent) {
-                    badge = `<span class="absolute top-0 right-0 bg-red-500 text-white text-[10px] px-2 py-1 rounded-bl-lg font-bold z-10 shadow-sm">🔥 急件</span>`;
-                    borderClass = 'border-l-4 border-l-red-500 border-red-100 shadow-md';
-                } else if (t.multi) {
-                    badge = `<span class="absolute top-0 right-0 bg-brand-600 text-white text-[10px] px-2 py-1 rounded-bl-lg font-bold z-10 shadow-sm">👥 多人</span>`;
-                    borderClass = 'border-l-4 border-l-brand-600 border-brand-100';
-                }
-
                 const card = `
-                <div onclick="openTaskModal(${t.id})" class="bg-white p-4 rounded-2xl shadow-sm border ${borderClass} relative overflow-hidden active-press cursor-pointer mb-3">
-                    ${badge}
-                    <div class="flex justify-between items-start mb-2 mt-1">
+                <div onclick="openTask(${t.id})" class="bg-white p-5 rounded-3xl shadow-sm border ${t.urgent ? 'border-l-4 border-l-red-500' : 'border-gray-50'} relative active-press cursor-pointer">
+                    ${t.urgent ? '<span class="absolute top-0 right-0 bg-red-500 text-white text-[10px] px-2 py-1 rounded-bl-xl font-bold">🔥 急件</span>' : ''}
+                    ${t.multi ? '<span class="absolute top-0 right-0 bg-brand-600 text-white text-[10px] px-2 py-1 rounded-bl-xl font-bold">👥 多人</span>' : ''}
+                    <div class="flex justify-between items-start mb-2">
                         <div class="flex items-center gap-2">
-                            <span class="w-8 h-8 rounded-full bg-gray-100 text-xs flex items-center justify-center font-bold text-gray-700">${t.avatar}</span>
-                            <span class="text-xs text-gray-500 font-medium">${t.role}</span>
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center text-[10px] text-white font-bold" style="background:${t.avatar}">${t.user[0]}</div>
+                            <span class="text-xs text-gray-400 font-bold">${t.role}</span>
                         </div>
-                        <span class="text-xl font-bold ${t.urgent ? 'text-red-600' : 'text-gray-900'}">$${t.price}</span>
+                        <span class="text-xl font-bold ${t.urgent ? 'text-red-600' : ''}">$${t.price}</span>
                     </div>
-                    <h3 class="font-bold text-lg mb-1 text-gray-800">${t.title}</h3>
-                    <p class="text-gray-400 text-xs flex items-center gap-1">
-                        <i data-lucide="map-pin" class="w-3 h-3"></i> 距離 200m
-                    </p>
+                    <h4 class="font-bold text-gray-800">${t.title}</h4>
+                    <p class="text-[10px] text-gray-400 mt-2 flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> 剛剛發布</p>
                 </div>`;
-                container.innerHTML += card;
+                list.innerHTML += card;
             });
             lucide.createIcons();
         }
 
-        // 發布模式切換
-        let currentMode = 'single';
-        function selectPostMode(mode) {
-            currentMode = mode;
-            const btnSingle = document.getElementById('btn-mode-single');
-            const btnMulti = document.getElementById('btn-mode-multi');
-            const multiOpt = document.getElementById('multi-options');
-
-            if (mode === 'single') {
-                btnSingle.className = "cursor-pointer p-4 border-2 border-brand-600 bg-brand-50 rounded-xl flex flex-col items-center justify-center text-brand-700 transition-all";
-                btnMulti.className = "cursor-pointer p-4 border border-gray-200 bg-white rounded-xl flex flex-col items-center justify-center text-gray-400 transition-all";
-                multiOpt.classList.add('hidden');
-            } else {
-                btnSingle.className = "cursor-pointer p-4 border border-gray-200 bg-white rounded-xl flex flex-col items-center justify-center text-gray-400 transition-all";
-                btnMulti.className = "cursor-pointer p-4 border-2 border-brand-600 bg-brand-50 rounded-xl flex flex-col items-center justify-center text-brand-700 transition-all";
-                multiOpt.classList.remove('hidden');
-            }
+        // 發布邏輯
+        let postMode = 'single';
+        function setMode(mode) {
+            postMode = mode;
+            document.getElementById('mode-single').className = mode === 'single' ? 'p-4 rounded-2xl border-2 border-brand-600 bg-brand-50 text-brand-700 flex flex-col items-center gap-1' : 'p-4 rounded-2xl border-2 border-gray-50 bg-gray-50 text-gray-300 flex flex-col items-center gap-1';
+            document.getElementById('mode-multi').className = mode === 'multi' ? 'p-4 rounded-2xl border-2 border-brand-600 bg-brand-50 text-brand-700 flex flex-col items-center gap-1' : 'p-4 rounded-2xl border-2 border-gray-50 bg-gray-50 text-gray-300 flex flex-col items-center gap-1';
+            document.getElementById('multi-input').classList.toggle('hidden', mode === 'single');
+            updateTotal();
         }
 
-        function adjustPeople(num) {
-            const el = document.getElementById('people-count');
-            let count = parseInt(el.innerText) + num;
-            if (count < 2) count = 2;
-            if (count > 10) count = 10;
-            el.innerText = count;
+        function updateTotal() {
+            const price = parseInt(document.getElementById('post-price').value) || 0;
+            const urgent = document.getElementById('urgent-toggle').checked;
+            const count = postMode === 'multi' ? parseInt(document.getElementById('post-count').value) : 1;
+            document.getElementById('final-price').innerText = '$' + (price * count + (urgent ? 30 : 0));
         }
 
-        // 發布任務 (邏輯修正：真的會新增)
-        function submitTask() {
+        function publishTask() {
             const title = document.getElementById('post-title').value;
-            const price = parseInt(document.getElementById('base-price').value);
-            const isUrgent = document.getElementById('urgent-toggle').checked;
-            
-            if (!title) { alert("請輸入標題"); return; }
+            if(!title) { alert('請填寫任務名稱'); return; }
 
             const newTask = {
                 id: Date.now(),
-                type: currentMode === 'multi' ? 'multi' : 'other',
+                type: postMode === 'multi' ? 'multi' : 'other',
                 title: title,
-                price: price + (isUrgent ? 50 : 0),
-                urgent: isUrgent,
-                user: '我 (剛剛)',
+                price: parseInt(document.getElementById('post-price').value),
+                user: '我',
                 role: '資管系',
-                avatar: '我',
-                mapClass: 'map-bg-1',
-                desc: '這是一個新發布的任務...',
-                multi: currentMode === 'multi'
+                avatar: '#4F46E5',
+                desc: '這是我剛剛發布的新任務細節。',
+                multi: postMode === 'multi',
+                urgent: document.getElementById('urgent-toggle').checked
             };
 
-            // 存入陣列 (插在最前面)
-            tasksData.unshift(newTask);
-            
-            // UI 反饋
-            const btn = document.querySelector('#page-post button');
-            const originalText = btn.innerText;
-            btn.innerText = "發布中...";
-            
-            setTimeout(() => {
-                btn.innerText = originalText;
-                alert("發布成功！已新增至大廳與我的訂單。");
-                
-                // 重置並跳轉
-                document.getElementById('post-title').value = '';
-                switchTab('tasks'); 
-                renderMyTasks(); // 更新我的訂單頁面
-                renderTasks();   // 更新首頁
-            }, 800);
+            tasks.unshift(newTask);
+            alert('發布成功！');
+            switchTab('tasks'); // 發布後跳到訂單頁
+            renderMyTasks();
+            renderHome();
         }
 
-        // 渲染「我發布的」
         function renderMyTasks() {
-            const container = document.getElementById('my-posted-list');
-            const myTasks = tasksData.filter(t => t.avatar === '我');
+            const list = document.getElementById('my-task-list');
+            list.innerHTML = '';
+            const myTasks = tasks.filter(t => t.user === '我');
+            if(myTasks.length === 0) { list.innerHTML = '<div class="text-center mt-20 text-gray-300">目前沒有發布任務</div>'; return; }
             
-            if (myTasks.length > 0) {
-                document.getElementById('empty-state').classList.add('hidden');
-                container.innerHTML = '';
-                myTasks.forEach(t => {
-                    container.innerHTML += `
-                        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
-                            <div>
-                                <h3 class="font-bold text-gray-900">${t.title}</h3>
-                                <p class="text-xs text-gray-500">等待接單中...</p>
-                            </div>
-                            <span class="font-bold text-brand-600">$${t.price}</span>
-                        </div>
-                    `;
-                });
-            }
+            myTasks.forEach(t => {
+                list.innerHTML += `<div class="bg-white p-5 rounded-2xl border shadow-sm flex justify-between items-center"><div><h4 class="font-bold">${t.title}</h4><span class="text-xs text-orange-500 font-bold">等待接單中</span></div><span class="font-bold text-brand-600">$${t.price}</span></div>`;
+            });
         }
 
         // 頁面切換
-        function switchTab(tabId) {
-            document.querySelectorAll('.page-section').forEach(el => el.classList.add('hidden'));
+        function switchTab(id) {
+            document.querySelectorAll('.page-section').forEach(p => p.classList.add('hidden'));
+            document.getElementById('page-'+id).classList.remove('hidden');
             
-            // 特殊處理 Post 頁面 (它是 Modal 形式)
-            if (tabId === 'post') {
-                document.getElementById('page-post').classList.remove('hidden');
-                return;
-            } else {
-                document.getElementById('page-post').classList.add('hidden');
-                document.getElementById('page-' + tabId).classList.remove('hidden');
-            }
-
-            // 導覽列狀態
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.classList.remove('text-brand-600');
-                btn.classList.add('text-gray-400');
-            });
-            if (tabId !== 'post') {
-                const btn = document.getElementById('nav-' + tabId);
-                btn.classList.remove('text-gray-400');
-                btn.classList.add('text-brand-600');
-            }
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.replace('text-brand-600', 'text-gray-300'));
+            if(id !== 'post') document.getElementById('nav-'+id).classList.replace('text-gray-300', 'text-brand-600');
             
-            if (tabId === 'home') renderTasks();
-            if (tabId === 'tasks') renderMyTasks();
+            if(id === 'home') renderHome();
+            if(id === 'tasks') renderMyTasks();
         }
 
-        // Modal 相關
-        let currentTaskUser = {}; 
-        
-        function openTaskModal(id) {
-            const task = tasksData.find(t => t.id === id);
-            const modal = document.getElementById('modal-task');
-            const content = document.getElementById('modal-task-content');
+        // Modal 操作
+        let selectedTaskUser = "";
+        function openTask(id) {
+            const t = tasks.find(x => x.id === id);
+            selectedTaskUser = t.user;
+            document.getElementById('det-title').innerText = t.title;
+            document.getElementById('det-price').innerText = '$'+t.price;
+            document.getElementById('det-user').innerText = t.user + (t.user === '我' ? ' (自己)' : '');
+            document.getElementById('det-avatar').innerText = t.user[0];
+            document.getElementById('det-avatar').style.backgroundColor = t.avatar;
+            document.getElementById('det-desc').innerText = t.desc;
+            document.getElementById('det-loc').innerText = t.role + ' 附近';
             
-            currentTaskUser = { name: task.user, role: task.role, avatar: task.avatar }; // 暫存給 Profile 用
-
-            document.getElementById('detail-title').innerText = task.title;
-            document.getElementById('detail-price').innerText = `$${task.price}`;
-            document.getElementById('detail-desc').innerText = task.desc;
-            document.getElementById('detail-user').innerText = task.user;
-            document.getElementById('detail-role').innerText = task.role;
-            document.getElementById('detail-avatar').innerText = task.avatar;
-            document.getElementById('detail-dist').innerText = (Math.random()*500 + 100).toFixed(0) + 'm';
-            
-            document.getElementById('detail-tag').innerText = task.urgent ? '🔥 急件' : (task.multi ? '👥 多人' : '一般');
-            
-            // 按鈕邏輯
             const btn = document.getElementById('btn-action');
-            if (task.multi) {
-                btn.innerText = "加入多人房間";
-                btn.onclick = () => { closeModal('modal-task'); document.getElementById('modal-lobby').classList.remove('hidden'); };
-                btn.className = "w-full bg-brand-600 text-white font-bold py-4 rounded-xl text-lg shadow-lg active:scale-95 transition";
-            } else {
-                btn.innerText = "接下任務";
-                btn.onclick = () => { alert('接單成功！請前往聯絡發案者。'); };
-                btn.className = "w-full bg-gray-900 text-white font-bold py-4 rounded-xl text-lg shadow-lg active:scale-95 transition";
-            }
+            if(t.user === '我') { btn.innerText = "管理委託"; btn.classList.replace('bg-gray-900', 'bg-brand-600'); }
+            else if(t.multi) { btn.innerText = "加入房間"; btn.classList.replace('bg-gray-900', 'bg-brand-600'); btn.onclick = () => { closeModal('modal-task'); document.getElementById('modal-lobby').classList.remove('hidden'); }; }
+            else { btn.innerText = "接下任務"; btn.className = "w-full bg-gray-900 text-white font-bold py-4 rounded-2xl shadow-xl"; btn.onclick = () => alert('接單成功！'); }
 
-            // 更新 Chat 資訊
-            document.getElementById('chat-name').innerText = task.role + ' ' + task.user;
-            document.getElementById('chat-avatar').innerText = task.avatar;
-
-            modal.classList.remove('hidden');
+            document.getElementById('modal-task').classList.remove('hidden');
             setTimeout(() => {
-                modal.classList.remove('opacity-0');
-                content.classList.remove('translate-y-full');
+                document.getElementById('modal-task').classList.replace('opacity-0', 'opacity-100');
+                document.getElementById('modal-task-content').classList.replace('translate-y-full', 'translate-y-0');
             }, 10);
         }
 
         function closeModal(id) {
-            const modal = document.getElementById(id);
-            const content = document.getElementById(id + '-content');
-            if (content) content.classList.add('translate-y-full');
-            else modal.classList.add('opacity-0');
-            
-            setTimeout(() => {
-                modal.classList.add('hidden');
-                modal.classList.remove('opacity-0');
-                if (content) content.classList.remove('translate-y-full');
-            }, 300);
+            const m = document.getElementById(id);
+            const c = document.getElementById(id+'-content');
+            if(c) c.classList.replace('translate-y-0', 'translate-y-full');
+            m.classList.replace('opacity-100', 'opacity-0');
+            setTimeout(() => m.classList.add('hidden'), 300);
         }
 
         function openOtherProfile() {
-            const modal = document.getElementById('modal-other-profile');
-            document.getElementById('profile-name-lg').innerText = currentTaskUser.name;
-            document.getElementById('profile-role-lg').innerText = currentTaskUser.role;
-            document.getElementById('profile-avatar-lg').innerText = currentTaskUser.avatar;
-            
-            modal.classList.remove('hidden');
+            document.getElementById('p-name').innerText = selectedTaskUser;
+            document.getElementById('p-avatar').innerText = selectedTaskUser[0];
+            document.getElementById('modal-other-profile').classList.remove('hidden');
         }
 
         function openChat() {
             closeModal('modal-task');
+            document.getElementById('chat-user').innerText = selectedTaskUser;
+            document.getElementById('chat-avatar').innerText = selectedTaskUser[0];
             document.getElementById('modal-chat').classList.remove('hidden');
         }
-        function closeChat() {
-            document.getElementById('modal-chat').classList.add('hidden');
-        }
+        function closeChat() { document.getElementById('modal-chat').classList.add('hidden'); }
 
         function filterTasks(type, el) {
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('bg-brand-600', 'text-white', 'active');
-                btn.classList.add('bg-white', 'text-gray-600');
-            });
-            el.classList.remove('bg-white', 'text-gray-600');
-            el.classList.add('bg-brand-600', 'text-white');
-            renderTasks(type);
-        }
-
-        function updateTotal() {
-            const price = parseInt(document.getElementById('base-price').value) || 0;
-            const isUrgent = document.getElementById('urgent-toggle').checked;
-            document.getElementById('total-price').innerText = '$' + (price + (isUrgent ? 50 : 0));
+            document.querySelectorAll('.tab-btn').forEach(b => { b.className = "tab-btn px-4 py-2 bg-white border border-gray-200 rounded-full text-xs font-bold whitespace-nowrap"; });
+            el.className = "tab-btn active px-4 py-2 bg-brand-600 text-white rounded-full text-xs font-bold whitespace-nowrap shadow-md";
+            renderHome(type);
         }
 
         // 初始化
-        renderTasks();
-
+        renderHome();
     </script>
 </body>
 </html>
