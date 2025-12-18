@@ -2,8 +2,8 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>校園小幫手 | Campus Link</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>校園小幫手 | Campus Link Pro</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -26,6 +26,9 @@
                     },
                     fontFamily: {
                         sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'up': '0 -4px 6px -1px rgba(0, 0, 0, 0.1)',
                     }
                 }
             }
@@ -33,505 +36,498 @@
     </script>
 
     <style>
+        /* 隱藏滾動條 */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .active-press:active { transform: scale(0.98); transition: transform 0.1s; }
-        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
         
-        /* 模擬地圖背景網格 */
-        .map-bg {
-            background-color: #f3f4f6;
-            background-image: linear-gradient(#e5e7eb 1px, transparent 1px), linear-gradient(90deg, #e5e7eb 1px, transparent 1px);
-            background-size: 20px 20px;
-        }
+        .active-press:active { transform: scale(0.98); transition: transform 0.1s; }
+        
+        /* iOS Safe Area 適配 */
+        .pb-safe { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+        .mb-safe { margin-bottom: env(safe-area-inset-bottom); }
+        
+        /* 模擬地圖差異 */
+        .map-bg-1 { background: #e5e7eb url('https://placehold.co/600x400/e5e7eb/a3a3a3?text=Map+Zone+A') center/cover; }
+        .map-bg-2 { background: #e5e7eb url('https://placehold.co/600x400/d1d5db/6b7280?text=Map+Zone+B') center/cover; }
+        .map-bg-3 { background: #e5e7eb url('https://placehold.co/600x400/f3f4f6/9ca3af?text=Campus+Gym') center/cover; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-900 font-sans h-screen w-screen overflow-hidden flex flex-col">
 
-    <main id="app-container" class="flex-1 overflow-y-auto no-scrollbar relative pb-20">
+    <main id="app-container" class="flex-1 overflow-y-auto no-scrollbar relative w-full">
         
-        <section id="page-home" class="page-section min-h-full p-4">
-            <header class="sticky top-0 bg-gray-50 z-10 pb-4 pt-2 flex justify-between items-center">
-                <div class="flex items-center gap-2 bg-white px-3 py-2 rounded-full shadow-sm border border-gray-100 active-press cursor-pointer">
-                    <i data-lucide="map-pin" class="w-4 h-4 text-brand-600"></i>
-                    <span class="text-sm font-bold text-gray-700">淡江大學 (TKU)</span>
-                    <i data-lucide="chevron-down" class="w-3 h-3 text-gray-400"></i>
+        <section id="page-home" class="page-section min-h-full">
+            <div class="sticky top-0 bg-white/90 backdrop-blur-md z-20 px-4 pt-safe-top pb-2 shadow-sm">
+                <div class="h-[env(safe-area-inset-top)] w-full"></div> 
+                
+                <div class="flex justify-between items-center py-2">
+                    <div class="flex items-center gap-2 bg-gray-100 px-3 py-1.5 rounded-full">
+                        <i data-lucide="map-pin" class="w-4 h-4 text-brand-600"></i>
+                        <select onchange="refreshTasks(this.value)" class="bg-transparent text-sm font-bold text-gray-700 outline-none pr-1">
+                            <option value="TKU">淡江大學 (目前)</option>
+                            <option value="NTU">台灣大學</option>
+                            <option value="NCCU">政治大學</option>
+                            <option value="Other">其他校區...</option>
+                        </select>
+                    </div>
+                    <div class="relative p-2">
+                        <i data-lucide="bell" class="w-6 h-6 text-gray-600"></i>
+                        <span class="absolute top-1 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+                    </div>
                 </div>
-                <div class="relative p-2 bg-white rounded-full shadow-sm active-press cursor-pointer">
-                    <i data-lucide="bell" class="w-5 h-5 text-gray-600"></i>
-                    <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                </div>
-            </header>
 
-            <div class="mb-6">
-                <h1 class="text-2xl font-bold text-gray-900">早安，小明 👋</h1>
-                <p class="text-gray-500 text-sm mt-1">目前校園內有 42 個任務等待救援</p>
+                <div class="flex gap-3 overflow-x-auto no-scrollbar mt-2 pb-2" id="task-tabs">
+                    <button onclick="filterTasks('all')" class="tab-btn active px-4 py-1.5 bg-brand-600 text-white text-sm font-medium rounded-full shadow-md whitespace-nowrap transition-all">全部</button>
+                    <button onclick="filterTasks('food')" class="tab-btn px-4 py-1.5 bg-white text-gray-600 text-sm font-medium rounded-full border border-gray-200 whitespace-nowrap transition-all">🍔 跑腿買飯</button>
+                    <button onclick="filterTasks('study')" class="tab-btn px-4 py-1.5 bg-white text-gray-600 text-sm font-medium rounded-full border border-gray-200 whitespace-nowrap transition-all">📚 共筆/佔位</button>
+                    <button onclick="filterTasks('multi')" class="tab-btn px-4 py-1.5 bg-white text-gray-600 text-sm font-medium rounded-full border border-gray-200 whitespace-nowrap transition-all border-brand-200 text-brand-600">👥 多人組隊</button>
+                </div>
             </div>
 
-            <div class="flex gap-3 overflow-x-auto no-scrollbar mb-6 pb-2">
-                <button class="px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-full whitespace-nowrap shadow-md shadow-brand-200">全部</button>
-                <button class="px-4 py-2 bg-white text-gray-600 text-sm font-medium rounded-full border border-gray-200 whitespace-nowrap">🔥 急件</button>
-                <button class="px-4 py-2 bg-white text-gray-600 text-sm font-medium rounded-full border border-gray-200 whitespace-nowrap">🍔 買飯</button>
-                <button class="px-4 py-2 bg-white text-gray-600 text-sm font-medium rounded-full border border-gray-200 whitespace-nowrap">📦 包裹</button>
-            </div>
-
-            <div class="space-y-4" id="task-list-container">
+            <div class="p-4 space-y-4 pb-24" id="task-list">
                 </div>
-            <div class="h-20"></div>
         </section>
 
-        <section id="page-post" class="page-section hidden min-h-full bg-white flex flex-col">
-            <header class="p-4 border-b border-gray-100 flex items-center justify-center relative">
-                <h2 class="text-xl font-bold">發布任務</h2>
+        <section id="page-post" class="page-section hidden min-h-full bg-white flex flex-col relative">
+            <header class="p-4 border-b border-gray-100 bg-white sticky top-0 z-10">
+                <h2 class="text-xl font-bold text-center">發布新委託</h2>
             </header>
             
-            <div class="p-5 flex-1 overflow-y-auto">
-                <div class="space-y-6">
+            <div class="p-5 flex-1 overflow-y-auto pb-32"> <div class="space-y-6">
+                    <div class="grid grid-cols-2 gap-3">
+                        <button class="p-4 border-2 border-brand-600 bg-brand-50 rounded-xl flex flex-col items-center justify-center text-brand-700">
+                            <i data-lucide="user" class="w-6 h-6 mb-1"></i>
+                            <span class="font-bold">單人任務</span>
+                        </button>
+                        <button class="p-4 border border-gray-200 rounded-xl flex flex-col items-center justify-center text-gray-400">
+                            <i data-lucide="users" class="w-6 h-6 mb-1"></i>
+                            <span class="font-medium">多人協作</span>
+                        </button>
+                    </div>
+
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">任務標題</label>
-                        <input type="text" placeholder="例如：幫買星巴克" class="w-full p-4 bg-gray-50 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 transition">
+                        <input type="text" placeholder="例如：幫忙搬系辦沙發" class="w-full p-4 bg-gray-50 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 transition">
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">從哪裡 (起點)</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">地點 (自動定位)</label>
                         <div class="relative">
-                            <span class="absolute left-4 top-4 w-3 h-3 bg-green-500 rounded-full border-2 border-white shadow"></span>
-                            <input type="text" placeholder="例如：7-11 大學城店" class="w-full p-4 pl-10 bg-gray-50 rounded-xl outline-none focus:ring-2 focus:ring-brand-500">
+                            <i data-lucide="map-pin" class="absolute left-4 top-4 w-5 h-5 text-brand-500"></i>
+                            <input type="text" value="淡江大學 工學館" class="w-full p-4 pl-12 bg-gray-50 rounded-xl outline-none">
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">到哪裡 (終點)</label>
-                        <div class="relative">
-                             <span class="absolute left-4 top-4 w-3 h-3 bg-red-500 rounded-full border-2 border-white shadow"></span>
-                            <input type="text" value="淡江大學 圖書館" class="w-full p-4 pl-10 bg-gray-50 rounded-xl outline-none focus:ring-2 focus:ring-brand-500">
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">願意支付金額</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">願付金額</label>
                         <div class="relative">
                             <span class="absolute left-4 top-4 text-gray-500">$</span>
-                            <input type="number" value="50" id="base-price" class="w-full p-4 pl-8 bg-gray-50 rounded-xl outline-none font-bold text-lg">
+                            <input type="number" value="150" id="base-price" class="w-full p-4 pl-8 bg-gray-50 rounded-xl outline-none font-bold text-lg">
                         </div>
                     </div>
 
-                    <div class="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100 p-4 rounded-xl flex items-center justify-between">
+                    <div class="bg-red-50 border border-red-100 p-4 rounded-xl flex items-center justify-between">
                         <div>
                             <div class="flex items-center gap-2">
-                                <h3 class="font-bold text-indigo-900">開啟急件置頂</h3>
-                                <span class="bg-red-500 text-white text-[10px] px-1.5 rounded animate-pulse">HOT</span>
+                                <h3 class="font-bold text-red-700">🔥 急件置頂</h3>
+                                <span class="text-xs bg-red-200 text-red-800 px-1 rounded">HOT</span>
                             </div>
-                            <p class="text-xs text-indigo-600 mt-1">加價 $30，平均接單速度快 3 倍</p>
+                            <p class="text-xs text-red-400 mt-1">增加 300% 曝光率，最快 5 分鐘接單</p>
                         </div>
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" id="urgent-toggle" class="sr-only peer" onchange="updateTotal()">
-                            <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600"></div>
+                            <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
                         </label>
                     </div>
                 </div>
             </div>
 
-            <div class="p-4 border-t border-gray-100 bg-white pb-safe">
-                <div class="flex justify-between items-end mb-4 px-2">
-                    <span class="text-gray-500 text-sm">預估總金額</span>
-                    <div class="text-right">
-                        <span class="text-xs text-gray-400 block mb-1" id="fee-breakdown">服務費 10% 已包含</span>
-                        <span class="text-3xl font-bold text-gray-900" id="total-price">$50</span>
-                    </div>
+            <div class="absolute bottom-0 left-0 w-full bg-white border-t border-gray-100 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-up z-20">
+                <div class="flex justify-between items-end mb-3">
+                    <span class="text-gray-500 text-sm">預估總額 (含手續費)</span>
+                    <span class="text-2xl font-bold text-gray-900" id="total-price">$150</span>
                 </div>
-                <button onclick="submitTask()" class="w-full bg-brand-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-brand-200 active:scale-95 transition-transform">
-                    確認發布
+                <button onclick="submitTask()" class="w-full bg-gray-900 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-transform">
+                    立即發布
                 </button>
             </div>
         </section>
 
         <section id="page-tasks" class="page-section hidden min-h-full p-4">
-            <h2 class="text-2xl font-bold text-gray-900 mb-6">我的行程</h2>
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">我的任務</h2>
             <div class="flex border-b border-gray-200 mb-4">
-                <div class="pb-2 border-b-2 border-brand-600 text-brand-600 font-medium px-4 w-1/2 text-center">我發布的</div>
-                <div class="pb-2 text-gray-400 font-medium px-4 w-1/2 text-center">我接單的</div>
+                <div class="pb-2 border-b-2 border-brand-600 text-brand-600 font-medium px-4">進行中</div>
+                <div class="pb-2 text-gray-400 font-medium px-4">歷史紀錄</div>
             </div>
-            
-            <div class="space-y-3">
-                 <div class="bg-white p-4 rounded-xl border border-gray-100 opacity-60">
-                    <div class="flex justify-between mb-2">
-                        <span class="font-bold text-gray-400 line-through">代買拿鐵</span>
-                        <span class="text-green-600 text-sm font-bold bg-green-50 px-2 rounded">已完成</span>
-                    </div>
-                    <p class="text-xs text-gray-400">昨日 14:30 • 支付 $65</p>
-                </div>
-                <div class="bg-white p-4 rounded-xl border border-gray-100 opacity-60">
-                    <div class="flex justify-between mb-2">
-                        <span class="font-bold text-gray-400 line-through">影印講義</span>
-                        <span class="text-green-600 text-sm font-bold bg-green-50 px-2 rounded">已完成</span>
-                    </div>
-                    <p class="text-xs text-gray-400">12/08 • 支付 $40</p>
-                </div>
+            <div class="text-center mt-20 opacity-50">
+                <i data-lucide="clipboard-list" class="w-16 h-16 mx-auto mb-2 text-gray-300"></i>
+                <p>目前沒有進行中的任務</p>
             </div>
         </section>
 
-        <section id="page-profile" class="page-section hidden min-h-full bg-gray-50">
+        <section id="page-profile" class="page-section hidden min-h-full bg-gray-50 pb-24">
             <div class="bg-white pb-6 pt-10 px-5 rounded-b-3xl shadow-sm mb-4">
                 <div class="flex items-center gap-4">
-                    <div class="w-20 h-20 bg-gray-200 rounded-full overflow-hidden border-4 border-white shadow-md">
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="avatar" class="w-full h-full">
+                    <div class="w-20 h-20 bg-gradient-to-tr from-brand-400 to-blue-300 rounded-full border-4 border-white shadow-md flex items-center justify-center text-white text-2xl font-bold">
+                        明
                     </div>
                     <div>
-                        <h2 class="text-xl font-bold text-gray-900">小明 Xiao Ming</h2>
+                        <h2 class="text-xl font-bold text-gray-900">小明</h2>
                         <div class="flex items-center gap-2 mt-1">
-                            <span class="bg-brand-50 text-brand-600 text-xs px-2 py-0.5 rounded border border-brand-100">TKU 淡江大學</span>
-                            <span class="text-gray-400 text-xs">資管系 3年級</span>
+                            <span class="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded">資管系 3A</span>
+                            <span class="text-yellow-500 text-sm font-bold flex items-center"><i data-lucide="star" class="w-3 h-3 fill-current mr-1"></i>4.9</span>
                         </div>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3 mt-6">
                     <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
-                        <span class="text-gray-400 text-xs block mb-1">錢包餘額</span>
-                        <span class="text-xl font-bold text-gray-900">$520</span>
+                        <span class="text-gray-400 text-xs">錢包餘額</span>
+                        <span class="text-xl font-bold text-gray-900 block mt-1">$520</span>
                     </div>
                     <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
-                        <span class="text-gray-400 text-xs block mb-1">互助評價</span>
-                        <div class="flex items-center gap-1">
-                            <span class="text-xl font-bold text-gray-900">4.9</span>
-                            <i data-lucide="star" class="w-4 h-4 text-yellow-400 fill-yellow-400"></i>
+                        <span class="text-gray-400 text-xs">已完成任務</span>
+                        <span class="text-xl font-bold text-gray-900 block mt-1">12</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-4">
+                <h3 class="font-bold text-gray-900 mb-3">歷史評價</h3>
+                <div class="space-y-3">
+                    <div class="bg-white p-4 rounded-xl shadow-sm">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-xs">A</div>
+                                <span class="font-bold text-sm">英文系 Alice</span>
+                            </div>
+                            <div class="flex text-yellow-400 text-xs"><i data-lucide="star" class="w-3 h-3 fill-current"></i><i data-lucide="star" class="w-3 h-3 fill-current"></i><i data-lucide="star" class="w-3 h-3 fill-current"></i><i data-lucide="star" class="w-3 h-3 fill-current"></i><i data-lucide="star" class="w-3 h-3 fill-current"></i></div>
                         </div>
+                        <p class="text-gray-600 text-sm">動作超快！幫我趕在系辦關門前領到包裹，救了我一命，大推！👍</p>
+                        <p class="text-gray-400 text-xs mt-2">任務：代領急件包裹</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs">職</div>
+                                <span class="font-bold text-sm">課外組 陳助教</span>
+                            </div>
+                            <div class="flex text-yellow-400 text-xs"><i data-lucide="star" class="w-3 h-3 fill-current"></i><i data-lucide="star" class="w-3 h-3 fill-current"></i><i data-lucide="star" class="w-3 h-3 fill-current"></i><i data-lucide="star" class="w-3 h-3 fill-current"></i><i data-lucide="star" class="w-3 h-3 fill-current"></i></div>
+                        </div>
+                        <p class="text-gray-600 text-sm">很有禮貌的同學，幫忙搬運器材很細心。</p>
+                        <p class="text-gray-400 text-xs mt-2">任務：多人協助搬運</p>
                     </div>
                 </div>
-            </div>
-             <div class="px-4 space-y-3">
-                <button class="w-full bg-white p-4 rounded-xl flex items-center justify-between shadow-sm active-press">
-                    <span class="font-medium">儲值與提領</span> <i data-lucide="chevron-right" class="w-5 h-5 text-gray-300"></i>
-                </button>
-                <button class="w-full bg-white p-4 rounded-xl flex items-center justify-between shadow-sm active-press">
-                    <span class="font-medium">歷史評價</span> <i data-lucide="chevron-right" class="w-5 h-5 text-gray-300"></i>
-                </button>
-            </div>
-        </section>
-
-        <section id="page-public-profile" class="hidden fixed inset-0 bg-gray-50 z-[60] overflow-y-auto pb-safe animate-fade-in">
-            <header class="sticky top-0 bg-white/80 backdrop-blur-md p-4 flex items-center gap-3 z-10 border-b border-gray-100">
-                <button onclick="closePublicProfile()" class="p-2 -ml-2 rounded-full hover:bg-gray-100"><i data-lucide="arrow-left" class="w-6 h-6"></i></button>
-                <span class="font-bold text-lg">使用者檔案</span>
-            </header>
-            
-            <div class="p-5 flex flex-col items-center bg-white mb-2">
-                <div class="w-24 h-24 bg-gray-200 rounded-full overflow-hidden border-4 border-white shadow-lg mb-3">
-                    <img id="public-avatar" src="" alt="avatar" class="w-full h-full">
-                </div>
-                <h2 id="public-name" class="text-2xl font-bold text-gray-900">Name</h2>
-                <div class="flex items-center gap-2 mt-1 mb-4">
-                    <span id="public-school" class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded">School</span>
-                    <div class="flex items-center gap-1 text-yellow-500">
-                        <span id="public-rating" class="font-bold text-sm">5.0</span>
-                        <i data-lucide="star" class="w-3 h-3 fill-yellow-500"></i>
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 w-full gap-4 text-center">
-                    <div class="bg-gray-50 p-3 rounded-lg">
-                        <div class="text-xl font-bold text-brand-600" id="public-tasks-count">0</div>
-                        <div class="text-xs text-gray-400">已完成任務</div>
-                    </div>
-                    <div class="bg-gray-50 p-3 rounded-lg">
-                        <div class="text-xl font-bold text-green-600">100%</div>
-                        <div class="text-xs text-gray-400">準時率</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="px-4 py-2">
-                <h3 class="font-bold text-gray-900 mb-3">最近評價</h3>
-                <div id="public-reviews-list" class="space-y-3">
-                    </div>
             </div>
         </section>
 
     </main>
 
-    <nav class="bg-white border-t border-gray-100 flex justify-around items-center pb-safe pt-2 h-[80px] z-40 absolute bottom-0 w-full shadow-[0_-5px_15px_rgba(0,0,0,0.03)]">
-        <button onclick="switchTab('home')" class="nav-btn group flex flex-col items-center gap-1 w-16 text-brand-600" id="nav-home">
-            <i data-lucide="home" class="w-6 h-6"></i><span class="text-[10px] font-medium">首頁</span>
+    <nav class="bg-white border-t border-gray-100 flex justify-around items-center h-[85px] z-50 absolute bottom-0 w-full pb-safe">
+        <button onclick="switchTab('home')" class="nav-btn text-brand-600 flex flex-col items-center gap-1 w-16" id="nav-home">
+            <i data-lucide="home" class="w-6 h-6"></i>
+            <span class="text-[10px] font-medium">大廳</span>
         </button>
-        <button onclick="switchTab('post')" class="nav-btn group flex flex-col items-center gap-1 w-16 text-gray-400" id="nav-post">
-            <div class="bg-brand-600 text-white p-3 rounded-full -mt-6 shadow-lg shadow-brand-200 group-active:scale-95 transition"><i data-lucide="plus" class="w-6 h-6"></i></div>
+        <button onclick="switchTab('post')" class="nav-btn text-gray-400 flex flex-col items-center gap-1 w-16" id="nav-post">
+            <div class="bg-brand-600 text-white p-3 rounded-full -mt-8 shadow-lg border-4 border-gray-50">
+                <i data-lucide="plus" class="w-6 h-6"></i>
+            </div>
             <span class="text-[10px] font-medium">發布</span>
         </button>
-        <button onclick="switchTab('tasks')" class="nav-btn group flex flex-col items-center gap-1 w-16 text-gray-400" id="nav-tasks">
-            <i data-lucide="list-todo" class="w-6 h-6"></i><span class="text-[10px] font-medium">訂單</span>
+        <button onclick="switchTab('tasks')" class="nav-btn text-gray-400 flex flex-col items-center gap-1 w-16" id="nav-tasks">
+            <i data-lucide="file-text" class="w-6 h-6"></i>
+            <span class="text-[10px] font-medium">訂單</span>
         </button>
-        <button onclick="switchTab('profile')" class="nav-btn group flex flex-col items-center gap-1 w-16 text-gray-400" id="nav-profile">
-            <i data-lucide="user" class="w-6 h-6"></i><span class="text-[10px] font-medium">我的</span>
+        <button onclick="switchTab('profile')" class="nav-btn text-gray-400 flex flex-col items-center gap-1 w-16" id="nav-profile">
+            <i data-lucide="user" class="w-6 h-6"></i>
+            <span class="text-[10px] font-medium">我的</span>
         </button>
     </nav>
 
-    <div id="modal-task" class="fixed inset-0 z-[50] hidden flex flex-col justify-end">
-        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal()"></div>
-        
-        <div class="bg-white w-full rounded-t-3xl p-0 relative transform transition-transform duration-300 translate-y-full flex flex-col max-h-[90vh]" id="modal-task-content">
-            <div class="w-full flex justify-center pt-3 pb-1" onclick="closeModal()">
-                <div class="w-12 h-1.5 bg-gray-300 rounded-full"></div>
+    <div id="modal-task" class="fixed inset-0 bg-black/40 z-[60] hidden flex flex-col justify-end opacity-0 transition-opacity duration-300">
+        <div class="bg-white w-full rounded-t-3xl p-5 transform translate-y-full transition-transform duration-300 pb-safe shadow-2xl" id="modal-task-content">
+            <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-5"></div>
+            
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <span class="px-2 py-1 rounded text-xs font-bold" id="detail-tag">標籤</span>
+                    <h3 class="text-2xl font-bold mt-2 text-gray-900" id="detail-title">任務標題</h3>
+                </div>
+                <div class="text-right">
+                    <div class="text-3xl font-bold text-brand-600" id="detail-price">$150</div>
+                </div>
             </div>
 
-            <div class="overflow-y-auto p-5 pb-safe">
-                <div class="flex justify-between items-start mb-4">
-                    <span id="m-tag" class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded font-medium">一般</span>
-                    <span id="m-price" class="text-3xl font-bold text-brand-600">$50</span>
-                </div>
-                
-                <h3 id="m-title" class="text-2xl font-bold text-gray-900 mb-4 leading-tight">任務標題</h3>
-
-                <div class="w-full h-40 map-bg rounded-xl border border-gray-200 mb-5 relative overflow-hidden flex items-center justify-center">
-                    <div class="absolute top-1/2 left-10 w-3 h-3 bg-green-500 rounded-full border-2 border-white shadow z-10"></div>
-                    <div class="absolute top-1/2 right-10 w-6 h-6 -mt-3 text-red-500 z-10"><i data-lucide="map-pin" class="w-full h-full fill-current"></i></div>
-                    <div class="absolute top-1/2 left-12 right-12 h-0.5 border-t-2 border-dashed border-gray-400"></div>
-                    <div class="bg-white/90 backdrop-blur px-3 py-1 rounded-full shadow-sm text-xs font-bold text-gray-600 z-20">
-                        距離 500m • 步行 6 分鐘
+            <div class="flex items-center justify-between bg-gray-50 p-3 rounded-xl mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center text-sm font-bold" id="detail-avatar">A</div>
+                    <div>
+                        <p class="font-bold text-sm text-gray-900" id="detail-user">使用者</p>
+                        <p class="text-xs text-gray-500" id="detail-role">身分</p>
                     </div>
                 </div>
-
-                <div class="space-y-4 mb-6">
-                    <div class="flex gap-3">
-                        <div class="flex flex-col items-center">
-                            <div class="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
-                            <div class="w-0.5 h-full bg-gray-200 my-1"></div>
-                        </div>
-                        <div>
-                            <p class="text-xs text-gray-400">取件/購買地</p>
-                            <p id="m-from" class="text-sm font-bold text-gray-800">7-11 大學城店</p>
-                        </div>
-                    </div>
-                    <div class="flex gap-3">
-                        <div class="flex flex-col items-center">
-                            <i data-lucide="map-pin" class="w-4 h-4 text-red-500"></i>
-                        </div>
-                        <div>
-                            <p class="text-xs text-gray-400">送達地</p>
-                            <p id="m-to" class="text-sm font-bold text-gray-800">商管大樓 305 教室</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div onclick="clickUserProfile()" class="flex items-center justify-between bg-gray-50 p-3 rounded-xl mb-6 active-press cursor-pointer border border-gray-100">
-                    <div class="flex items-center gap-3">
-                        <img id="m-avatar" src="" class="w-10 h-10 rounded-full bg-gray-200">
-                        <div>
-                            <p id="m-user" class="text-sm font-bold text-gray-900">陳同學</p>
-                            <p class="text-xs text-gray-500">查看評價與紀錄</p>
-                        </div>
-                    </div>
-                    <i data-lucide="chevron-right" class="w-5 h-5 text-gray-300"></i>
-                </div>
-
-                <button onclick="acceptTask()" class="w-full bg-brand-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-brand-200 active:scale-95 transition">
-                    立即接單
+                <button onclick="openChat()" class="bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1 shadow-sm active:bg-gray-50">
+                    <i data-lucide="message-circle" class="w-4 h-4"></i>
+                    私訊
                 </button>
             </div>
+
+            <div class="w-full h-32 rounded-xl mb-4 relative overflow-hidden bg-gray-100" id="detail-map">
+                <div class="absolute inset-0 bg-black/10 flex items-center justify-center">
+                    <span class="bg-white/90 px-3 py-1 rounded-full text-xs font-bold shadow flex items-center gap-1">
+                        <i data-lucide="navigation" class="w-3 h-3 text-blue-500"></i>
+                        距離 350m
+                    </span>
+                </div>
+            </div>
+
+            <p class="text-gray-600 mb-6 leading-relaxed" id="detail-desc">描述...</p>
+
+            <button id="btn-action" class="w-full bg-brand-600 text-white font-bold py-3.5 rounded-xl text-lg shadow-lg active:scale-95 transition">
+                接下任務
+            </button>
         </div>
     </div>
 
-    <div id="modal-success" class="fixed inset-0 bg-black/50 z-[80] hidden flex items-center justify-center p-5 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-sm rounded-2xl p-8 text-center transform scale-90 transition-transform duration-300" id="modal-success-content">
-            <div class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i data-lucide="check" class="w-8 h-8"></i>
+    <div id="modal-lobby" class="fixed inset-0 bg-gray-900 z-[70] hidden flex flex-col">
+        <div class="flex-1 flex flex-col items-center justify-center p-6 text-white text-center">
+            <div class="bg-white/10 p-4 rounded-full mb-4 animate-pulse">
+                <i data-lucide="users" class="w-12 h-12 text-white"></i>
             </div>
-            <h3 id="success-title" class="text-xl font-bold mb-2">接單成功！</h3>
-            <p id="success-desc" class="text-gray-500 mb-6">請盡快前往指定地點執行任務。</p>
-            <button onclick="closeSuccess()" class="w-full bg-gray-900 text-white font-bold py-3 rounded-xl">知道了</button>
+            <h2 class="text-2xl font-bold mb-2">等待隊友加入...</h2>
+            <p class="text-gray-300 mb-8">任務：搬運系辦舊沙發</p>
+            
+            <div class="grid grid-cols-3 gap-6 w-full max-w-sm mb-10">
+                <div class="flex flex-col items-center gap-2">
+                    <div class="w-16 h-16 rounded-full bg-green-500 border-2 border-white flex items-center justify-center font-bold text-xl">我</div>
+                    <span class="text-sm font-medium">已準備</span>
+                </div>
+                <div class="flex flex-col items-center gap-2">
+                    <div class="w-16 h-16 rounded-full bg-blue-500 border-2 border-transparent flex items-center justify-center font-bold text-xl">B</div>
+                    <span class="text-sm text-gray-400">王同學</span>
+                </div>
+                <div class="flex flex-col items-center gap-2">
+                    <div class="w-16 h-16 rounded-full bg-white/20 border-2 border-dashed border-gray-500 flex items-center justify-center">
+                        <span class="text-xs text-gray-400">等待中</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-black/30 px-6 py-3 rounded-full text-sm">
+                目前人數: 2 / 3 人
+            </div>
+        </div>
+        <div class="p-6 bg-gray-800 pb-safe">
+            <button onclick="closeLobby()" class="w-full bg-red-500 text-white font-bold py-3 rounded-xl mb-3">
+                離開房間
+            </button>
+            <p class="text-center text-xs text-gray-500">等待房主開始任務...</p>
+        </div>
+    </div>
+
+    <div id="modal-chat" class="fixed inset-0 bg-white z-[80] hidden flex flex-col">
+        <div class="border-b border-gray-100 p-4 pt-safe-top flex items-center gap-3 bg-white shadow-sm">
+            <button onclick="closeChat()" class="p-1"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
+            <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-xs">A</div>
+            <div>
+                <h3 class="font-bold text-sm">英文系 Alice</h3>
+                <p class="text-[10px] text-green-500 flex items-center gap-1">● 線上</p>
+            </div>
+        </div>
+        
+        <div class="flex-1 bg-gray-50 p-4 space-y-4 overflow-y-auto" id="chat-body">
+            <div class="flex justify-center"><span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">今天 14:20</span></div>
+            <div class="flex justify-start">
+                <div class="bg-white border border-gray-200 p-3 rounded-2xl rounded-tl-none max-w-[80%] text-sm shadow-sm">
+                    你好，請問包裹大嗎？機車載得下嗎？
+                </div>
+            </div>
+            <div class="flex justify-end">
+                <div class="bg-brand-600 text-white p-3 rounded-2xl rounded-tr-none max-w-[80%] text-sm shadow-sm">
+                    不算太大，大概像鞋盒那樣，機車踏板可以放！
+                </div>
+            </div>
+        </div>
+
+        <div class="p-3 bg-white border-t border-gray-100 pb-safe">
+            <div class="flex gap-2">
+                <input type="text" placeholder="傳送訊息..." class="flex-1 bg-gray-100 rounded-full px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-brand-500">
+                <button class="bg-brand-600 text-white p-2 rounded-full"><i data-lucide="send" class="w-4 h-4"></i></button>
+            </div>
         </div>
     </div>
 
     <script>
-        // --- 1. 模擬資料庫 (Data Mock) ---
-        const users = {
-            'u1': { name: '陳同學', school: '淡江大學 運管系', rating: 4.8, tasks: 24, avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Chen', reviews: [
-                { user: '林同學', comment: '動作超快，感謝！', score: 5 },
-                { user: '王小美', comment: '飲料有點灑出來，但態度很好', score: 4 }
-            ]},
-            'u2': { name: '張助教', school: '淡江大學 英文系', rating: 5.0, tasks: 12, avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Zhang', reviews: [
-                { user: 'Kevin', comment: '救了我一命，謝謝助教！', score: 5 }
-            ]},
-            'u3': { name: 'Lisa', school: '淡江大學 資工系', rating: 4.5, tasks: 8, avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Lisa', reviews: [] }
-        };
+        lucide.createIcons();
 
-        const tasks = [
-            { id: 1, title: '代買摩斯漢堡 (海洋吉士)', price: 50, type: '跑腿', isUrgent: false, from: '摩斯漢堡 大學城店', to: '商管大樓 3F', userId: 'u1' },
-            { id: 2, title: '急！幫領系辦包裹', price: 80, type: '包裹', isUrgent: true, from: '工學館 305 系辦', to: '圖書館門口', userId: 'u2' },
-            { id: 3, title: '歸還 3 本原文書', price: 35, type: '圖書館', isUrgent: false, from: '松濤館門口', to: '圖書館還書箱', userId: 'u3' },
-            { id: 4, title: '幫買全家霜淇淋', price: 45, type: '跑腿', isUrgent: false, from: '全家便利商店', to: '小小麥旁', userId: 'u1' }
+        // 模擬資料庫
+        const tasksData = [
+            { id: 1, type: 'food', title: '代買摩斯漢堡', price: 50, urgent: false, user: '陳同學', role: '資工系', avatar: 'C', mapClass: 'map-bg-1', desc: '送到商管大樓 3F，只要漢堡不要飲料。', multi: false },
+            { id: 2, type: 'study', title: '急！幫領系辦包裹', price: 80, urgent: true, user: 'Alice', role: '英文系', avatar: 'A', mapClass: 'map-bg-2', desc: '系辦五點關門，請幫我拿去宿舍大廳放。', multi: false },
+            { id: 3, type: 'multi', title: '搬運系辦舊沙發', price: 200, urgent: false, user: '張助教', role: '物理系辦公室', avatar: '職', mapClass: 'map-bg-3', desc: '需要 3 個人幫忙從 3 樓搬到 1 樓回收場。', multi: true },
+            { id: 4, type: 'study', title: '圖書館佔位', price: 30, urgent: false, user: '王同學', role: '會計系', avatar: 'W', mapClass: 'map-bg-1', desc: '期中考週，幫我佔 5 樓窗邊的位置。', multi: false },
+            { id: 5, type: 'food', title: '7-11 買咖啡', price: 20, urgent: false, user: '林同學', role: '日文系', avatar: 'L', mapClass: 'map-bg-2', desc: '大杯拿鐵熱的，送到文館。', multi: false },
         ];
 
-        let currentTaskId = null;
+        // 渲染任務列表
+        function renderTasks(filter = 'all') {
+            const container = document.getElementById('task-list');
+            container.innerHTML = '';
+            
+            const filtered = tasksData.filter(t => filter === 'all' || t.type === filter || (filter === 'multi' && t.multi));
+            
+            filtered.forEach(t => {
+                let badge = '';
+                let borderClass = 'border-gray-100';
+                
+                if (t.urgent) {
+                    badge = `<span class="absolute top-0 right-0 bg-red-500 text-white text-[10px] px-2 py-1 rounded-bl-lg font-bold z-10">🔥 急件</span>`;
+                    borderClass = 'border-red-100 border-l-4 border-l-red-500 shadow-red-50';
+                } else if (t.multi) {
+                    badge = `<span class="absolute top-0 right-0 bg-brand-600 text-white text-[10px] px-2 py-1 rounded-bl-lg font-bold z-10">👥 3人缺1</span>`;
+                    borderClass = 'border-brand-100 border-l-4 border-l-brand-600';
+                }
 
-        // --- 2. 初始化與渲染 ---
-        lucide.createIcons();
-        renderTasks();
-
-        function renderTasks() {
-            const container = document.getElementById('task-list-container');
-            container.innerHTML = tasks.map(task => `
-                <div onclick="openTaskModal(${task.id})" class="bg-white p-4 rounded-2xl shadow-sm border ${task.isUrgent ? 'border-red-100 border-l-4 border-l-red-500' : 'border-gray-100'} active-press cursor-pointer relative overflow-hidden">
-                    ${task.isUrgent ? '<div class="absolute top-0 right-0 bg-red-500 text-white text-[10px] px-2 py-1 rounded-bl-lg font-bold">急件 HOT</div>' : ''}
-                    <div class="flex justify-between items-start mb-3 mt-1">
-                        <span class="${task.isUrgent ? 'bg-red-50 text-red-600' : 'bg-gray-100 text-gray-600'} text-xs px-2 py-1 rounded-md font-medium">${task.type}</span>
-                        <span class="text-lg font-bold ${task.isUrgent ? 'text-red-600' : 'text-gray-900'}">$${task.price}</span>
+                const card = `
+                <div onclick="openTaskModal(${t.id})" class="bg-white p-4 rounded-2xl shadow-sm border ${borderClass} relative overflow-hidden active-press cursor-pointer">
+                    ${badge}
+                    <div class="flex justify-between items-start mb-2 mt-1">
+                        <div class="flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-gray-100 text-xs flex items-center justify-center font-bold text-gray-600">${t.avatar}</span>
+                            <span class="text-xs text-gray-500">${t.role}</span>
+                        </div>
+                        <span class="text-lg font-bold ${t.urgent ? 'text-red-600' : 'text-gray-900'}">$${t.price}</span>
                     </div>
-                    <h3 class="font-bold text-lg mb-1">${task.title}</h3>
-                    <p class="text-gray-500 text-sm mb-3 line-clamp-1">${task.from} <i data-lucide="arrow-right" class="w-3 h-3 inline"></i> ${task.to}</p>
-                    <div class="flex items-center gap-2 text-xs text-gray-400">
-                        <img src="${users[task.userId].avatar}" class="w-4 h-4 rounded-full">
-                        <span>${users[task.userId].name}</span>
-                    </div>
-                </div>
-            `).join('');
+                    <h3 class="font-bold text-lg mb-1">${t.title}</h3>
+                    <p class="text-gray-400 text-xs flex items-center gap-1">
+                        <i data-lucide="map-pin" class="w-3 h-3"></i> 距離 ${(Math.random() * 500 + 100).toFixed(0)}m
+                    </p>
+                </div>`;
+                container.innerHTML += card;
+            });
             lucide.createIcons();
         }
 
-        // --- 3. 頁面導航 ---
-        function switchTab(tabId) {
+        // 頁面與標籤邏輯
+        function switchTab(tab) {
             document.querySelectorAll('.page-section').forEach(el => el.classList.add('hidden'));
-            document.getElementById(`page-${tabId}`).classList.remove('hidden');
+            document.getElementById(`page-${tab}`).classList.remove('hidden');
             
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.classList.remove('text-brand-600');
-                btn.classList.add('text-gray-400');
-            });
-            const activeBtn = document.getElementById(`nav-${tabId}`);
-            activeBtn.classList.remove('text-gray-400');
-            if(tabId !== 'post') activeBtn.classList.add('text-brand-600');
+            // 更新底部按鈕顏色
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.replace('text-brand-600', 'text-gray-400'));
+            if(tab !== 'post') document.getElementById(`nav-${tab}`).classList.replace('text-gray-400', 'text-brand-600');
         }
 
-        // --- 4. 任務詳情 Modal ---
+        function filterTasks(type) {
+            // 更新按鈕樣式
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-brand-600', 'text-white', 'active');
+                btn.classList.add('bg-white', 'text-gray-600');
+            });
+            event.target.classList.remove('bg-white', 'text-gray-600');
+            event.target.classList.add('bg-brand-600', 'text-white', 'active');
+            
+            renderTasks(type);
+        }
+
+        // 任務詳情 Modal 邏輯
         function openTaskModal(id) {
-            const task = tasks.find(t => t.id === id);
-            currentTaskId = id;
-            const user = users[task.userId];
-
-            document.getElementById('m-title').innerText = task.title;
-            document.getElementById('m-price').innerText = `$${task.price}`;
-            document.getElementById('m-from').innerText = task.from;
-            document.getElementById('m-to').innerText = task.to;
-            document.getElementById('m-user').innerText = user.name;
-            document.getElementById('m-avatar').src = user.avatar;
-            
-            const tag = document.getElementById('m-tag');
-            const price = document.getElementById('m-price');
-            
-            if (task.isUrgent) {
-                tag.innerText = "急件 +$30";
-                tag.className = "bg-red-100 text-red-600 text-xs px-2 py-1 rounded font-bold";
-                price.classList.add('text-red-600');
-            } else {
-                tag.innerText = task.type;
-                tag.className = "bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded font-medium";
-                price.classList.remove('text-red-600');
-            }
-
+            const task = tasksData.find(t => t.id === id);
             const modal = document.getElementById('modal-task');
             const content = document.getElementById('modal-task-content');
+            
+            // 填入資料
+            document.getElementById('detail-title').innerText = task.title;
+            document.getElementById('detail-price').innerText = `$${task.price}`;
+            document.getElementById('detail-desc').innerText = task.desc;
+            document.getElementById('detail-user').innerText = task.user;
+            document.getElementById('detail-role').innerText = task.role;
+            document.getElementById('detail-avatar').innerText = task.avatar;
+            document.getElementById('detail-tag').innerText = task.type === 'food' ? '跑腿' : (task.multi ? '多人協作' : '一般');
+            document.getElementById('detail-tag').className = `px-2 py-1 rounded text-xs font-bold ${task.urgent ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'}`;
+
+            // 更換地圖樣式
+            const mapEl = document.getElementById('detail-map');
+            mapEl.className = `w-full h-32 rounded-xl mb-4 relative overflow-hidden ${task.mapClass}`;
+
+            // 按鈕邏輯
+            const btn = document.getElementById('btn-action');
+            if (task.multi) {
+                btn.innerText = "加入房間 (2/3)";
+                btn.onclick = () => { closeModal('modal-task'); openLobby(); };
+                btn.className = "w-full bg-brand-600 text-white font-bold py-3.5 rounded-xl text-lg shadow-lg";
+            } else {
+                btn.innerText = "接下任務";
+                btn.onclick = () => { alert('接單成功！'); closeModal('modal-task'); };
+                btn.className = "w-full bg-black text-white font-bold py-3.5 rounded-xl text-lg shadow-lg";
+            }
+
             modal.classList.remove('hidden');
             setTimeout(() => {
+                modal.classList.remove('opacity-0');
                 content.classList.remove('translate-y-full');
             }, 10);
         }
 
-        function closeModal() {
-            const modal = document.getElementById('modal-task');
-            const content = document.getElementById('modal-task-content');
-            content.classList.add('translate-y-full');
-            setTimeout(() => modal.classList.add('hidden'), 300);
-        }
-
-        // --- 5. 公開個人檔案邏輯 ---
-        function clickUserProfile() {
-            // 取得目前任務的發布者 ID
-            const task = tasks.find(t => t.id === currentTaskId);
-            const user = users[task.userId];
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            const content = document.getElementById(id + '-content');
             
-            // 填入資料
-            document.getElementById('public-name').innerText = user.name;
-            document.getElementById('public-school').innerText = user.school;
-            document.getElementById('public-rating').innerText = user.rating;
-            document.getElementById('public-tasks-count').innerText = user.tasks;
-            document.getElementById('public-avatar').src = user.avatar;
+            if(content) content.classList.add('translate-y-full');
+            else modal.classList.add('opacity-0'); // for lobby/chat
 
-            // 填入評論
-            const reviewsContainer = document.getElementById('public-reviews-list');
-            if (user.reviews.length > 0) {
-                reviewsContainer.innerHTML = user.reviews.map(r => `
-                    <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
-                        <div class="flex justify-between mb-1">
-                            <span class="font-bold text-sm text-gray-800">${r.user}</span>
-                            <div class="flex text-yellow-400 text-xs">
-                                ${'★'.repeat(r.score)}
-                            </div>
-                        </div>
-                        <p class="text-sm text-gray-600">${r.comment}</p>
-                    </div>
-                `).join('');
-            } else {
-                reviewsContainer.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">目前還沒有文字評價</p>';
-            }
-
-            // 顯示頁面
-            document.getElementById('page-public-profile').classList.remove('hidden');
-        }
-
-        function closePublicProfile() {
-            document.getElementById('page-public-profile').classList.add('hidden');
-        }
-
-        // --- 6. 接單與發布成功邏輯 ---
-        function acceptTask() {
-            closeModal();
-            showSuccess('接單成功！', '請盡快前往指定地點執行任務。');
-        }
-
-        function submitTask() {
-            // 模擬發布
-            const btn = document.querySelector('#page-post button');
-            btn.innerText = "處理中...";
-            setTimeout(() => {
-                btn.innerText = "確認發布";
-                showSuccess('發布成功！', '您的任務已上架，正等待同學接單。');
-            }, 600);
-        }
-
-        function showSuccess(title, desc) {
-            document.getElementById('success-title').innerText = title;
-            document.getElementById('success-desc').innerText = desc;
-            
-            const modal = document.getElementById('modal-success');
-            const content = document.getElementById('modal-success-content');
-            modal.classList.remove('hidden');
-            setTimeout(() => {
-                content.classList.remove('scale-90');
-                content.classList.add('scale-100');
-            }, 10);
-        }
-
-        function closeSuccess() {
-            const modal = document.getElementById('modal-success');
-            const content = document.getElementById('modal-success-content');
-            content.classList.remove('scale-100');
-            content.classList.add('scale-90');
             setTimeout(() => {
                 modal.classList.add('hidden');
-                // 如果是在發布頁面，回到首頁
-                if(!document.getElementById('page-post').classList.contains('hidden')) {
-                    switchTab('home');
-                }
-            }, 200);
+                modal.classList.remove('opacity-0');
+                if(content) content.classList.remove('translate-y-full');
+            }, 300);
+        }
+
+        // 房間與私訊邏輯
+        function openLobby() { document.getElementById('modal-lobby').classList.remove('hidden'); }
+        function closeLobby() { document.getElementById('modal-lobby').classList.add('hidden'); }
+        
+        function openChat() { 
+            closeModal('modal-task'); // 關閉詳情
+            document.getElementById('modal-chat').classList.remove('hidden'); 
+        }
+        function closeChat() { document.getElementById('modal-chat').classList.add('hidden'); }
+
+        // 其他模擬邏輯
+        function refreshTasks(school) {
+            const list = document.getElementById('task-list');
+            list.style.opacity = '0.5';
+            setTimeout(() => {
+                // 模擬切換校區重整數據
+                renderTasks(); 
+                list.style.opacity = '1';
+                alert(`已切換至 ${school} 校區，資料已更新。`);
+            }, 500);
         }
 
         function updateTotal() {
             const base = parseInt(document.getElementById('base-price').value) || 0;
             const isUrgent = document.getElementById('urgent-toggle').checked;
-            const total = base + (isUrgent ? 30 : 0);
-            const el = document.getElementById('total-price');
-            el.innerText = `$${total}`;
-            el.className = `text-3xl font-bold ${isUrgent ? 'text-red-600' : 'text-gray-900'}`;
+            const total = base + (isUrgent ? 50 : 0); // 假設急件+50
+            document.getElementById('total-price').innerText = `$${total}`;
         }
-        document.getElementById('base-price').addEventListener('input', updateTotal);
+
+        function submitTask() {
+            const btn = document.querySelector('#page-post button');
+            btn.innerText = "發布中...";
+            setTimeout(() => {
+                alert("發布成功！已通知附近 15 位同學。");
+                btn.innerText = "立即發布";
+                switchTab('home');
+            }, 1000);
+        }
+
+        // 點擊背景關閉 Modal
+        document.getElementById('modal-task').addEventListener('click', (e) => {
+            if(e.target === document.getElementById('modal-task')) closeModal('modal-task');
+        });
+
+        // 初始化
+        renderTasks();
 
     </script>
 </body>
