@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>校園小幫手 | Campus Link Pro</title>
+    <title>校園小幫手 | Campus Link Pro v3</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -24,13 +24,9 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .active-press:active { transform: scale(0.97); transition: 0.1s; }
-        
-        /* 修復 iOS 安全區域與滑動 */
         .page-section { height: 100vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .pb-safe { padding-bottom: calc(100px + env(safe-area-inset-bottom)); }
         .pt-safe { padding-top: env(safe-area-inset-top); }
-        
-        /* 頁面切換動畫 */
         .fade-in { animation: fadeIn 0.2s ease-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
@@ -50,7 +46,10 @@
                             <option>政治大學</option>
                         </select>
                     </div>
-                    <div class="relative p-2"><i data-lucide="bell" class="w-6 h-6 text-gray-600"></i></div>
+                    <button onclick="openNotifications()" class="relative p-2 active-press">
+                        <i data-lucide="bell" class="w-6 h-6 text-gray-600"></i>
+                        <span class="absolute top-1 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+                    </button>
                 </div>
                 <div class="flex gap-2 overflow-x-auto no-scrollbar py-1">
                     <button onclick="filterTasks('all', this)" class="tab-btn active px-4 py-2 bg-brand-600 text-white rounded-full text-xs font-bold whitespace-nowrap shadow-md">全部</button>
@@ -58,18 +57,17 @@
                     <button onclick="filterTasks('multi', this)" class="tab-btn px-4 py-2 bg-white border border-gray-200 rounded-full text-xs font-bold whitespace-nowrap">👥 多人</button>
                 </div>
             </div>
-
-            <div class="p-4 space-y-4 pb-32" id="task-list-home">
-                </div>
+            <div class="p-4 space-y-4 pb-32" id="task-list-home"></div>
         </section>
 
         <section id="page-post" class="page-section hidden bg-white fade-in">
             <header class="p-4 border-b border-gray-100 pt-safe flex items-center justify-between sticky top-0 bg-white z-10">
                 <h2 class="text-xl font-bold">發布新委託</h2>
-                <button onclick="switchTab('home')" class="p-2"><i data-lucide="x" class="w-6 h-6 text-gray-400"></i></button>
+                <button onclick="switchTab('home')" class="p-2 text-gray-400"><i data-lucide="x" class="w-6 h-6"></i></button>
             </header>
             
-            <div class="p-5 space-y-8 pb-48"> <div>
+            <div class="p-5 space-y-8 pb-48">
+                <div>
                     <label class="block text-sm font-bold text-gray-700 mb-3">任務模式</label>
                     <div class="grid grid-cols-2 gap-3">
                         <button onclick="setMode('single')" id="mode-single" class="p-4 rounded-2xl border-2 border-brand-600 bg-brand-50 text-brand-700 flex flex-col items-center gap-1 active-press">
@@ -88,12 +86,7 @@
 
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-2">任務標題</label>
-                    <input type="text" id="post-title" placeholder="例如：幫忙搬重物、代排隊..." class="w-full p-4 bg-gray-50 rounded-xl outline-none focus:bg-white border focus:border-brand-600 transition-all">
-                </div>
-
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-2">地點</label>
-                    <input type="text" id="post-loc" value="淡江大學 圖書館" class="w-full p-4 bg-gray-50 rounded-xl outline-none border focus:border-brand-600">
+                    <input type="text" id="post-title" placeholder="例如：幫忙搬重物..." class="w-full p-4 bg-gray-50 rounded-xl outline-none focus:bg-white border focus:border-brand-600 transition-all">
                 </div>
 
                 <div>
@@ -104,18 +97,18 @@
                 <div class="flex items-center justify-between p-4 bg-red-50 rounded-xl border border-red-100">
                     <div>
                         <h4 class="font-bold text-red-700">🔥 急件置頂</h4>
-                        <p class="text-xs text-red-400">增加 3 倍曝光率 (+$30)</p>
+                        <p class="text-xs text-red-400">曝光加倍 (+$30)</p>
                     </div>
                     <input type="checkbox" id="urgent-toggle" onchange="updateTotal()" class="w-6 h-6 accent-red-500">
                 </div>
             </div>
 
             <div class="fixed bottom-0 left-0 w-full bg-white border-t p-5 pb-8 shadow-2xl z-20">
-                <div class="flex justify-between items-center mb-4 px-1">
+                <div class="flex justify-between items-center mb-4">
                     <span class="text-gray-500 font-medium">預估總額</span>
                     <span id="final-price" class="text-3xl font-bold text-gray-900">$100</span>
                 </div>
-                <button onclick="publishTask()" class="w-full bg-brand-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-brand-100 active:scale-95 transition">立即發布</button>
+                <button onclick="publishTask()" class="w-full bg-brand-600 text-white font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition">立即發布</button>
             </div>
         </section>
 
@@ -125,41 +118,54 @@
                 <button class="pb-3 border-b-2 border-brand-600 text-brand-600">進行中</button>
                 <button class="pb-3 text-gray-400">已完成</button>
             </div>
-            <div id="my-task-list" class="space-y-4">
-                </div>
+            <div id="my-task-list" class="space-y-4"></div>
         </section>
 
         <section id="page-profile" class="page-section hidden pt-safe bg-gray-50">
             <div class="bg-white p-6 rounded-b-[40px] shadow-sm mb-6 text-center">
                 <div class="w-24 h-24 bg-brand-600 text-white rounded-full mx-auto flex items-center justify-center text-3xl font-bold mb-3 shadow-xl">明</div>
                 <h2 class="text-2xl font-bold">小明</h2>
-                <p class="text-gray-400 text-sm">TKU 資管 3A | 信用 100</p>
-                
-                <div class="grid grid-cols-2 gap-4 mt-6">
+                <p class="text-gray-400 text-sm mb-4">TKU 資管 3A | 信用滿分</p>
+                <div class="grid grid-cols-2 gap-4">
                     <div class="bg-gray-50 p-4 rounded-2xl">
                         <span class="text-xs text-gray-400 block mb-1">錢包餘額</span>
                         <span class="text-xl font-bold text-gray-900">$520</span>
                     </div>
-                    <div onclick="openReviews()" class="bg-gray-50 p-4 rounded-2xl cursor-pointer">
-                        <span class="text-xs text-gray-400 block mb-1">互助評價</span>
-                        <span class="text-xl font-bold text-gray-900 flex items-center justify-center">4.9 <i data-lucide="star" class="w-4 h-4 fill-yellow-400 text-yellow-400 ml-1"></i></span>
+                    <div class="bg-gray-50 p-4 rounded-2xl">
+                        <span class="text-xs text-gray-400 block mb-1">我的評分</span>
+                        <span class="text-xl font-bold text-yellow-500 flex items-center justify-center">4.9 <i data-lucide="star" class="w-4 h-4 fill-current ml-1"></i></span>
                     </div>
                 </div>
             </div>
             
-            <div class="px-5 space-y-4">
-                <div class="bg-white p-5 rounded-2xl flex justify-between items-center shadow-sm">
-                    <span class="font-bold text-gray-700">錢包提領</span><i data-lucide="chevron-right" class="text-gray-300"></i>
-                </div>
-                <div class="bg-white p-5 rounded-2xl flex justify-between items-center shadow-sm">
-                    <span class="font-bold text-gray-700">隱私設定</span><i data-lucide="chevron-right" class="text-gray-300"></i>
+            <div class="px-5 pb-32">
+                <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <i data-lucide="message-square" class="w-5 h-5 text-brand-600"></i> 我的歷史評價
+                </h3>
+                <div class="space-y-3" id="my-reviews-container">
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-bold text-gray-900">學號 B110... 的同學</span>
+                            <div class="flex text-yellow-400"><i data-lucide="star" class="w-3 h-3 fill-current"></i><i data-lucide="star" class="w-3 h-3 fill-current"></i><i data-lucide="star" class="w-3 h-3 fill-current"></i><i data-lucide="star" class="w-3 h-3 fill-current"></i><i data-lucide="star" class="w-3 h-3 fill-current"></i></div>
+                        </div>
+                        <p class="text-sm text-gray-600">幫忙搬東西很有禮貌，速度也很快，值得信任！</p>
+                        <p class="text-[10px] text-gray-300 mt-2">2025.12.05 • 任務：協助搬運重物</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-bold text-gray-900">化學系 林同學</span>
+                            <div class="flex text-yellow-400"><i data-lucide="star" class="w-3 h-3 fill-current"></i><i data-lucide="star" class="w-3 h-3 fill-current"></i><i data-lucide="star" class="w-3 h-3 fill-current"></i><i data-lucide="star" class="w-3 h-3 fill-current"></i><i data-lucide="star" class="w-3 h-3 text-gray-200"></i></div>
+                        </div>
+                        <p class="text-sm text-gray-600">雖然遲到了兩分鐘，但服務態度很好，下次還會委託。</p>
+                        <p class="text-[10px] text-gray-300 mt-2">2025.11.20 • 任務：代排隊買飯</p>
+                    </div>
                 </div>
             </div>
         </section>
 
     </main>
 
-    <nav class="fixed bottom-0 left-0 w-full bg-white border-t flex justify-around items-center h-[90px] pb-6 z-50 shadow-up">
+    <nav class="fixed bottom-0 left-0 w-full bg-white border-t flex justify-around items-center h-[90px] pb-6 z-50 shadow-xl">
         <button onclick="switchTab('home')" id="nav-home" class="nav-btn text-brand-600 flex flex-col items-center gap-1">
             <i data-lucide="home" class="w-6 h-6"></i><span class="text-[10px] font-bold">大廳</span>
         </button>
@@ -176,54 +182,43 @@
     </nav>
 
     <div id="modal-task" class="fixed inset-0 bg-black/50 z-[60] hidden flex flex-col justify-end opacity-0 transition-opacity">
-        <div class="bg-white w-full h-[85vh] rounded-t-[40px] p-6 pb-24 overflow-y-auto transform translate-y-full transition-transform" id="modal-task-content">
+        <div class="bg-white w-full h-[80vh] rounded-t-[40px] p-6 pb-24 overflow-y-auto transform translate-y-full transition-transform" id="modal-task-content">
             <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6"></div>
-            <div class="flex justify-between items-start mb-4">
-                <h3 id="det-title" class="text-2xl font-bold w-2/3 leading-tight">任務</h3>
+            <div class="flex justify-between items-start mb-6">
+                <h3 id="det-title" class="text-2xl font-bold w-2/3">任務</h3>
                 <span id="det-price" class="text-3xl font-bold text-brand-600">$100</span>
             </div>
             
-            <div onclick="openOtherProfile()" class="flex items-center justify-between bg-gray-50 p-4 rounded-2xl mb-6 active-press cursor-pointer">
+            <div onclick="openOtherProfile()" class="flex items-center justify-between bg-gray-50 p-4 rounded-2xl mb-6 active-press cursor-pointer border border-gray-100">
                 <div class="flex items-center gap-3">
-                    <div id="det-avatar" class="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center font-bold text-white">?</div>
+                    <div id="det-avatar" class="w-12 h-12 bg-gray-400 rounded-full flex items-center justify-center font-bold text-white text-xl">?</div>
                     <div>
-                        <p id="det-user" class="font-bold text-gray-900">User</p>
-                        <p class="text-xs text-yellow-500 font-bold flex items-center"><i data-lucide="star" class="w-3 h-3 fill-current mr-1"></i> 4.8 (12則評論)</p>
+                        <p id="det-user" class="font-bold">User</p>
+                        <p class="text-[10px] text-yellow-500 font-bold flex items-center gap-1"><i data-lucide="star" class="w-3 h-3 fill-current"></i> 4.8 (12則評論)</p>
                     </div>
                 </div>
-                <button onclick="event.stopPropagation(); openChat()" class="bg-white border border-gray-200 px-4 py-2 rounded-xl text-xs font-bold shadow-sm">聯絡案主</button>
+                <button onclick="event.stopPropagation(); openChat()" class="bg-white px-4 py-2 rounded-xl text-xs font-bold border shadow-sm">聯絡案主</button>
             </div>
 
-            <div class="space-y-4 mb-10 text-sm text-gray-600">
-                <p class="flex items-center gap-2"><i data-lucide="map-pin" class="w-4 h-4 text-brand-600"></i> <span id="det-loc">淡江大學</span></p>
-                <p id="det-desc" class="leading-relaxed bg-gray-50 p-4 rounded-xl">描述...</p>
-            </div>
-
-            <button onclick="acceptTask()" id="btn-action" class="w-full bg-gray-900 text-white font-bold py-4 rounded-2xl shadow-xl active:scale-95 transition">接下任務</button>
+            <p id="det-desc" class="bg-gray-50 p-4 rounded-xl text-sm text-gray-600 leading-relaxed mb-6"></p>
+            <button onclick="acceptTask()" class="w-full bg-gray-900 text-white font-bold py-4 rounded-2xl shadow-xl active-press">接下任務</button>
         </div>
     </div>
 
-    <div id="modal-other-profile" class="fixed inset-0 bg-white z-[70] hidden flex flex-col fade-in">
-        <header class="p-4 pt-safe flex items-center gap-4 border-b">
-            <button onclick="closeModal('modal-other-profile')" class="p-2"><i data-lucide="arrow-left" class="w-6 h-6"></i></button>
-            <h2 class="font-bold text-lg">發布者評價</h2>
-        </header>
-        <div class="p-6 overflow-y-auto space-y-6">
-            <div class="text-center">
-                <div id="p-avatar" class="w-20 h-20 bg-gray-200 rounded-full mx-auto mb-3 flex items-center justify-center text-2xl font-bold">?</div>
-                <h3 id="p-name" class="text-xl font-bold">Alice</h3>
-                <div class="flex justify-center text-yellow-400 my-2">
-                    <i data-lucide="star" class="w-5 h-5 fill-current"></i><i data-lucide="star" class="w-5 h-5 fill-current"></i><i data-lucide="star" class="w-5 h-5 fill-current"></i><i data-lucide="star" class="w-5 h-5 fill-current"></i><i data-lucide="star" class="w-5 h-5 fill-current"></i>
-                </div>
+    <div id="modal-notif" class="fixed inset-0 bg-black/50 z-[90] hidden flex flex-col justify-end transition-opacity opacity-0">
+        <div class="bg-white w-full h-[50vh] rounded-t-[30px] p-6 shadow-2xl overflow-y-auto transform translate-y-full transition-transform" id="modal-notif-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-bold text-lg">通知中心</h3>
+                <button onclick="closeModal('modal-notif')"><i data-lucide="x" class="w-5 h-5 text-gray-400"></i></button>
             </div>
             <div class="space-y-4">
-                <div class="bg-gray-50 p-4 rounded-2xl">
-                    <div class="flex justify-between mb-2"><span class="font-bold text-sm">王同學</span><span class="text-gray-400 text-xs">2025.12.10</span></div>
-                    <p class="text-sm text-gray-600 leading-relaxed">非常親切，地點敘述的很清楚，領完東西後很快就收到酬勞了，大推！</p>
+                <div class="p-4 bg-indigo-50 rounded-xl flex gap-3">
+                    <i data-lucide="info" class="w-5 h-5 text-indigo-500"></i>
+                    <p class="text-xs text-indigo-900 leading-relaxed">您的「代買摩斯漢堡」任務已經被接單囉！請前往私訊溝通。</p>
                 </div>
-                <div class="bg-gray-50 p-4 rounded-2xl">
-                    <div class="flex justify-between mb-2"><span class="font-bold text-sm">李同學</span><span class="text-gray-400 text-xs">2025.11.28</span></div>
-                    <p class="text-sm text-gray-600 leading-relaxed">雖然是多人任務，但主揪協調的很好，搬東西過程很順利。</p>
+                <div class="p-4 bg-gray-50 rounded-xl flex gap-3">
+                    <i data-lucide="gift" class="w-5 h-5 text-gray-400"></i>
+                    <p class="text-xs text-gray-600">本週互助積分已更新，您目前排全校前 10%！</p>
                 </div>
             </div>
         </div>
@@ -232,16 +227,12 @@
     <div id="modal-chat" class="fixed inset-0 bg-white z-[80] hidden flex flex-col fade-in">
         <header class="p-4 pt-safe border-b flex items-center gap-3">
             <button onclick="closeChat()"><i data-lucide="chevron-left" class="w-6 h-6 text-gray-400"></i></button>
-            <div id="chat-avatar" class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-xs font-bold text-white">?</div>
+            <div id="chat-avatar" class="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center text-xs font-bold text-white">?</div>
             <h3 id="chat-user" class="font-bold text-sm">User</h3>
         </header>
         <div class="flex-1 bg-gray-50 p-4 space-y-4 overflow-y-auto">
-            <div class="flex justify-end">
-                <div class="bg-brand-600 text-white p-3 rounded-2xl rounded-tr-none text-sm max-w-[80%] shadow-md">你好，我想接這個委託。請問東西很重嗎？</div>
-            </div>
-            <div class="flex justify-start">
-                <div class="bg-white border p-3 rounded-2xl rounded-tl-none text-sm max-w-[80%] shadow-sm text-gray-700">你好！不會很重喔，大概像一個大箱子而已，用機車載很方便，謝謝你！</div>
-            </div>
+            <div class="flex justify-end"><div class="bg-brand-600 text-white p-3 rounded-2xl rounded-tr-none text-sm max-w-[80%]">你好，我想接這個委託。請問東西重嗎？</div></div>
+            <div class="flex justify-start"><div class="bg-white border p-3 rounded-2xl rounded-tl-none text-sm max-w-[80%] text-gray-700">你好！不重喔，大概像一個大箱子而已，謝謝你！</div></div>
         </div>
         <div class="p-3 bg-white border-t pb-safe flex gap-2">
             <input type="text" placeholder="傳送訊息..." class="flex-1 bg-gray-100 rounded-full px-5 py-3 text-sm outline-none">
@@ -249,36 +240,39 @@
         </div>
     </div>
 
-    <div id="modal-lobby" class="fixed inset-0 bg-gray-900 z-[90] hidden flex flex-col items-center justify-center text-white fade-in">
-        <div class="bg-white/10 p-5 rounded-full mb-6 animate-pulse"><i data-lucide="users" class="w-12 h-12 text-white"></i></div>
-        <h2 class="text-2xl font-bold mb-2">等待隊友加入...</h2>
-        <p class="text-gray-400 mb-10">預計需要 3 人 / 目前 2 人</p>
-        <div class="flex gap-8 mb-12">
-            <div class="flex flex-col items-center gap-2"><div class="w-16 h-16 rounded-full bg-brand-600 flex items-center justify-center font-bold text-xl border-4 border-white">我</div><span class="text-xs font-bold text-green-400">已準備</span></div>
-            <div class="flex flex-col items-center gap-2"><div class="w-16 h-16 rounded-full bg-gray-700 flex items-center justify-center font-bold text-xl text-gray-500">?</div><span class="text-xs text-gray-600">等待中</span></div>
+    <div id="modal-other-profile" class="fixed inset-0 bg-white z-[70] hidden flex flex-col fade-in">
+        <header class="p-4 pt-safe flex items-center border-b">
+            <button onclick="closeModal('modal-other-profile')" class="p-2"><i data-lucide="arrow-left" class="w-6 h-6 text-gray-400"></i></button>
+            <h2 class="font-bold text-lg ml-2">發布者評價</h2>
+        </header>
+        <div class="p-6 overflow-y-auto space-y-6">
+            <div class="text-center">
+                <div id="p-avatar" class="w-20 h-20 bg-gray-200 rounded-full mx-auto mb-3 flex items-center justify-center text-2xl font-bold text-white">?</div>
+                <h3 id="p-name" class="text-xl font-bold">User</h3>
+                <div class="flex justify-center text-yellow-400 my-2"><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i></div>
+            </div>
+            <div class="bg-gray-50 p-4 rounded-2xl">
+                <p class="text-sm text-gray-600">「溝通很有耐心的發案者，地點敘述非常準確，推薦！」</p>
+                <p class="text-[10px] text-gray-400 mt-2">— 物理系 陳同學</p>
+            </div>
         </div>
-        <button onclick="closeModal('modal-lobby')" class="px-8 py-3 bg-red-500 text-white font-bold rounded-full">離開房間</button>
     </div>
 
     <script>
         lucide.createIcons();
 
-        // 模擬資料庫
         let tasks = [
-            { id: 1, type: 'food', title: '幫領摩斯漢堡 (海洋吉士)', price: 50, user: 'Alice', role: '英文系', avatar: '#6366f1', desc: '在工學館 3F 教室，不用飲料。', multi: false },
-            { id: 2, type: 'study', title: '急！系辦包裹代領', price: 80, user: '陳助教', role: '物理系', avatar: '#10b981', desc: '限時領取，系辦要關門了。', multi: false, urgent: true },
-            { id: 3, type: 'multi', title: '搬運社辦舊沙發', price: 250, user: '張社長', role: '熱舞社', avatar: '#f59e0b', desc: '多人合力任務，預計需要三人。', multi: true }
+            { id: 1, type: 'food', title: '幫領摩斯漢堡', price: 50, user: 'Alice', role: '英文系', avatar: '#6366f1', desc: '在工學館 3F 教室，不用飲料。', multi: false },
+            { id: 2, type: 'study', title: '急！系辦包裹代領', price: 80, user: '陳助教', role: '物理系', avatar: '#10b981', desc: '系辦五點關門。', multi: false, urgent: true },
+            { id: 3, type: 'multi', title: '搬運社辦沙發', price: 250, user: '張社長', role: '熱舞社', avatar: '#f59e0b', desc: '預計需要三人。', multi: true }
         ];
 
-        // 渲染大廳列表
         function renderHome(filter = 'all') {
             const list = document.getElementById('task-list-home');
             list.innerHTML = '';
-            
             const filtered = tasks.filter(t => filter === 'all' || t.type === filter || (filter === 'multi' && t.multi));
-            
             filtered.forEach(t => {
-                const card = `
+                list.innerHTML += `
                 <div onclick="openTask(${t.id})" class="bg-white p-5 rounded-3xl shadow-sm border ${t.urgent ? 'border-l-4 border-l-red-500' : 'border-gray-50'} relative active-press cursor-pointer">
                     ${t.urgent ? '<span class="absolute top-0 right-0 bg-red-500 text-white text-[10px] px-2 py-1 rounded-bl-xl font-bold">🔥 急件</span>' : ''}
                     ${t.multi ? '<span class="absolute top-0 right-0 bg-brand-600 text-white text-[10px] px-2 py-1 rounded-bl-xl font-bold">👥 多人</span>' : ''}
@@ -290,14 +284,11 @@
                         <span class="text-xl font-bold ${t.urgent ? 'text-red-600' : ''}">$${t.price}</span>
                     </div>
                     <h4 class="font-bold text-gray-800">${t.title}</h4>
-                    <p class="text-[10px] text-gray-400 mt-2 flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> 剛剛發布</p>
                 </div>`;
-                list.innerHTML += card;
             });
             lucide.createIcons();
         }
 
-        // 發布邏輯
         let postMode = 'single';
         function setMode(mode) {
             postMode = mode;
@@ -310,30 +301,26 @@
         function updateTotal() {
             const price = parseInt(document.getElementById('post-price').value) || 0;
             const urgent = document.getElementById('urgent-toggle').checked;
-            const count = postMode === 'multi' ? parseInt(document.getElementById('post-count').value) : 1;
-            document.getElementById('final-price').innerText = '$' + (price * count + (urgent ? 30 : 0));
+            document.getElementById('final-price').innerText = '$' + (price + (urgent ? 30 : 0));
         }
 
         function publishTask() {
             const title = document.getElementById('post-title').value;
-            if(!title) { alert('請填寫任務名稱'); return; }
-
-            const newTask = {
+            if(!title) { alert('請輸入標題'); return; }
+            tasks.unshift({
                 id: Date.now(),
-                type: postMode === 'multi' ? 'multi' : 'other',
+                type: postMode === 'multi' ? 'multi' : 'food',
                 title: title,
                 price: parseInt(document.getElementById('post-price').value),
                 user: '我',
                 role: '資管系',
                 avatar: '#4F46E5',
-                desc: '這是我剛剛發布的新任務細節。',
+                desc: '我剛剛發布的新委託。',
                 multi: postMode === 'multi',
                 urgent: document.getElementById('urgent-toggle').checked
-            };
-
-            tasks.unshift(newTask);
+            });
             alert('發布成功！');
-            switchTab('tasks'); // 發布後跳到訂單頁
+            switchTab('tasks');
             renderMyTasks();
             renderHome();
         }
@@ -341,44 +328,42 @@
         function renderMyTasks() {
             const list = document.getElementById('my-task-list');
             list.innerHTML = '';
-            const myTasks = tasks.filter(t => t.user === '我');
-            if(myTasks.length === 0) { list.innerHTML = '<div class="text-center mt-20 text-gray-300">目前沒有發布任務</div>'; return; }
-            
-            myTasks.forEach(t => {
-                list.innerHTML += `<div class="bg-white p-5 rounded-2xl border shadow-sm flex justify-between items-center"><div><h4 class="font-bold">${t.title}</h4><span class="text-xs text-orange-500 font-bold">等待接單中</span></div><span class="font-bold text-brand-600">$${t.price}</span></div>`;
+            const my = tasks.filter(t => t.user === '我');
+            if(my.length === 0) list.innerHTML = '<div class="text-center mt-20 text-gray-300">目前沒有發布任務</div>';
+            my.forEach(t => {
+                list.innerHTML += `<div class="bg-white p-5 rounded-2xl border shadow-sm flex justify-between items-center"><div><h4 class="font-bold">${t.title}</h4><span class="text-xs text-orange-500 font-bold">等待接單</span></div><span class="font-bold text-brand-600">$${t.price}</span></div>`;
             });
         }
 
-        // 頁面切換
         function switchTab(id) {
             document.querySelectorAll('.page-section').forEach(p => p.classList.add('hidden'));
             document.getElementById('page-'+id).classList.remove('hidden');
-            
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.replace('text-brand-600', 'text-gray-300'));
             if(id !== 'post') document.getElementById('nav-'+id).classList.replace('text-gray-300', 'text-brand-600');
-            
             if(id === 'home') renderHome();
             if(id === 'tasks') renderMyTasks();
         }
 
-        // Modal 操作
-        let selectedTaskUser = "";
+        // 通知鈴鐺功能
+        function openNotifications() {
+            const m = document.getElementById('modal-notif');
+            m.classList.remove('hidden');
+            setTimeout(() => {
+                m.classList.replace('opacity-0', 'opacity-100');
+                document.getElementById('modal-notif-content').classList.replace('translate-y-full', 'translate-y-0');
+            }, 10);
+        }
+
+        let selectedUser = {};
         function openTask(id) {
             const t = tasks.find(x => x.id === id);
-            selectedTaskUser = t.user;
+            selectedUser = t;
             document.getElementById('det-title').innerText = t.title;
             document.getElementById('det-price').innerText = '$'+t.price;
-            document.getElementById('det-user').innerText = t.user + (t.user === '我' ? ' (自己)' : '');
+            document.getElementById('det-user').innerText = t.user;
             document.getElementById('det-avatar').innerText = t.user[0];
             document.getElementById('det-avatar').style.backgroundColor = t.avatar;
             document.getElementById('det-desc').innerText = t.desc;
-            document.getElementById('det-loc').innerText = t.role + ' 附近';
-            
-            const btn = document.getElementById('btn-action');
-            if(t.user === '我') { btn.innerText = "管理委託"; btn.classList.replace('bg-gray-900', 'bg-brand-600'); }
-            else if(t.multi) { btn.innerText = "加入房間"; btn.classList.replace('bg-gray-900', 'bg-brand-600'); btn.onclick = () => { closeModal('modal-task'); document.getElementById('modal-lobby').classList.remove('hidden'); }; }
-            else { btn.innerText = "接下任務"; btn.className = "w-full bg-gray-900 text-white font-bold py-4 rounded-2xl shadow-xl"; btn.onclick = () => alert('接單成功！'); }
-
             document.getElementById('modal-task').classList.remove('hidden');
             setTimeout(() => {
                 document.getElementById('modal-task').classList.replace('opacity-0', 'opacity-100');
@@ -395,15 +380,17 @@
         }
 
         function openOtherProfile() {
-            document.getElementById('p-name').innerText = selectedTaskUser;
-            document.getElementById('p-avatar').innerText = selectedTaskUser[0];
+            document.getElementById('p-name').innerText = selectedUser.user;
+            document.getElementById('p-avatar').innerText = selectedUser.user[0];
+            document.getElementById('p-avatar').style.backgroundColor = selectedUser.avatar;
             document.getElementById('modal-other-profile').classList.remove('hidden');
         }
 
         function openChat() {
             closeModal('modal-task');
-            document.getElementById('chat-user').innerText = selectedTaskUser;
-            document.getElementById('chat-avatar').innerText = selectedTaskUser[0];
+            document.getElementById('chat-user').innerText = selectedUser.user;
+            document.getElementById('chat-avatar').innerText = selectedUser.user[0];
+            document.getElementById('chat-avatar').style.backgroundColor = selectedUser.avatar;
             document.getElementById('modal-chat').classList.remove('hidden');
         }
         function closeChat() { document.getElementById('modal-chat').classList.add('hidden'); }
@@ -414,7 +401,6 @@
             renderHome(type);
         }
 
-        // 初始化
         renderHome();
     </script>
 </body>
